@@ -1,0 +1,96 @@
+#!/bin/bash
+
+set -e
+
+if [ ! -d /var/lib/eid ]
+then
+	mkdir -p /var/lib/eid
+fi
+
+if [ -f /var/lib/eid/config ]
+then
+	. /var/lib/eid/config
+fi
+
+export EID_TEST_CA_TYPE="${EID_TEST_CA_TYPE:-sha256}"
+export EID_TEST_CA_ORG="${EID_TEST_CA_ORG:-Acme, Inc}"
+
+case "$EID_TEST_CA_TYPE" in
+	sha256)
+		root_years=15
+		ca_years=12
+		cert_years=10
+		key_size=2048
+		hash_alg=256
+	;;
+	sha1)
+		root_years=15
+		ca_years=12
+		cert_years=10
+		key_size=2048
+		hash_alg=1
+	;;
+	old)
+		root_years=14
+		ca_years=7
+		cert_years=5
+		key_size=1024
+		hash_alg=1
+	;;
+esac
+
+ca_size=$(( $key_size * 2 ))
+
+case "$1" in
+	buildroot)
+		mkdir /var/lib/eid
+		cd /var/lib/eid
+		days=$(( ( $(date -d "now + $root_years years" +%s) - $(date -d now +%s) ) / 86400 ))
+		openssl req -batch -days $days -nodes -new -newkey rsa:$ca_size -x509 -sha$hash_alg -config /usr/share/eid-test/root/root.conf -keyout root.key -out root.crt
+		echo "Root CA created."
+		writeconf=1
+	;;
+	genca)
+		if [ -z "$2" ]
+		then
+			echo "E: a name for the CA is required" >&2
+			exit 1
+		fi
+		writeconf=1
+	;;
+	signca)
+		echo "E: not yet implemented" >&2
+		exit 2
+	;;
+	run)
+		if [ ! -d /var/lib/eid/ -a ! -f /var/lib/eid/root.key ]
+		then
+			exec $0 "not initialized"
+		fi
+		echo "E: not yet implemented" >&2
+		exit 2
+	;;
+	*)
+		echo "E: Unsupported mode: $1. Known modes of operation:" >&2
+		echo "   buildroot: build the root CA and the RRN certificate" >&2
+		echo "" >&2
+		echo "   genca <ca_name>: build an intermediate CA called <ca_name>" >&2
+		echo "   signca: sign the certificate of an intermediate CA; requires" >&2
+		echo "       that the root has been built, first" >&2
+		echo "   gencrl: build a CRL (only supported by intermediate CA)" >&2
+		echo "" >&2
+		echo "   importcrl: import a CA's CRL (only necessary if the CA is"
+		echo "       not run inside the same container, and doesn't share" >&2
+		echo "       the /var/lib/eid volume with the root CA)" >&2
+		echo "   signkey: sign a card's key; requires that the intermediate CA" >&2
+		echo "       has been built, first." >&2
+		echo "   run: run the OCSP responder. This runs a webserver on port 80." >&2
+		exit 1
+	;;
+esac
+
+if [ ! -z "$writeconf" ]
+then
+	echo "EID_TEST_CA_ORG=\"$EID_TEST_CA_ORG\"" > /var/lib/eid/config
+	echo "EID_TEST_CA_TYPE=\"$EID_TEST_CA_TYPE\"" >> /var/lib/eid/config
+fi
