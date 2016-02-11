@@ -110,6 +110,7 @@ case "$1" in
 		openssl req -batch -days $days -nodes -new -newkey rsa:$ca_size -x509 -sha$hash_alg -config /usr/share/eid-test/root/root.conf -keyout ${EID_TEST_ROOT_NAME}.key -out ${EID_TEST_ROOT_NAME}.crt
 		touch /var/lib/eid/${EID_TEST_ROOT_NAME}-index.txt
 		echo "01" > /var/lib/eid/${EID_TEST_ROOT_NAME}-serial
+		openssl ca -batch -config /usr/share/eid-test/root/root.conf -gencrl -out /var/lib/eid/crls/${EID_TEST_ROOT_NAME}.crl
 		echo "Root CA \"$EID_TEST_ROOT_NAME\" created. Now generate the intermediate CA with the \"genca\" command."
 		writeconf=1
 	;;
@@ -118,6 +119,7 @@ case "$1" in
 		cd /var/lib/eid
 		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e 's/[^[a-zA-Z0-9]]/_/g')
 		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ${EID_TEST_CA_NAME}.key -out ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/intermediate/ca.conf
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -gencrl -out /var/lib/eid/crls/${EID_TEST_CA_NAME}.crl
 		echo "Intermediate CA \"$EID_TEST_CA_NAME\" generated."
 		writeconf=1
 	;;
