@@ -1,6 +1,6 @@
 FROM debian:jessie
 MAINTAINER Wouter Verhelst <wouter.verhelst@fedict.be>
-RUN apt-get update && apt-get install -y apache2 openssl
+RUN apt-get update && apt-get install -y apache2 openssl libcgi-pm-perl
 RUN a2enmod cgi
 ADD camanage /usr/bin/camanage
 ADD root/* /usr/share/eid-test/root/
