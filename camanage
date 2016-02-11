@@ -1,10 +1,12 @@
 #!/bin/bash
 
 set -e
+set -x
 
 if [ ! -d /var/lib/eid ]
 then
-	mkdir -p /var/lib/eid
+	echo "E: You need to create a volume for /var/lib/eid!" >&2
+	exit 1
 fi
 
 if [ -f /var/lib/eid/config ]
@@ -14,6 +16,11 @@ fi
 
 export EID_TEST_CA_TYPE="${EID_TEST_CA_TYPE:-sha256}"
 export EID_TEST_CA_ORG="${EID_TEST_CA_ORG:-Acme, Inc}"
+export EID_TEST_CA_OCSP="${EID_TEST_CA_OCSP:-http://localhost/ocsp}"
+export EID_TEST_CA_CRL="${EID_TEST_CA_CRL:-http://localhost/crl}"
+
+export EID_TEST_ROOT_NAME
+export EID_TEST_CA_NAME
 
 case "$EID_TEST_CA_TYPE" in
 	sha256)
@@ -41,56 +48,144 @@ esac
 
 ca_size=$(( $key_size * 2 ))
 
+notyet() {
+	echo "E: This functionality hasn't been implemented yet" >&2
+	exit 1
+}
+
+usage() {
+	echo " Commands for the root CA:"
+	echo "   buildroot [<name>]: build the root CA and the RRN certificate"
+	echo "   run [<name>]: run the OCSP responder. This runs a webserver on port 80."
+	echo "  The following are only necessary if the root and intermediate CA certificates"
+	echo "  are on separate machines:"
+	echo "   ocspsigner [<name> [<ca_name>]]: generate and export a CSR for a designated"
+	echo "       OCSP signer certificate for <ca_name> under the <name> root."
+	echo "   importsigner [<name [<ca_name>]]: import the signed OCSP signer certificate."
+	echo "   importcrl [<name> [<ca_name>]: import a CA's CRL."
+	echo "   signca [<name> [<ca_name>]: sign the certificate of an intermediate CA;"
+	echo "       requires that the root has been built, first"
+	echo ""
+	echo " Commands for the intermediate CA:"
+	echo "  Note that all CA commands (except for genca and buildca) use the most"
+	echo "  recently generated CA by default."
+	echo "   genca <ca_name>: build an intermediate CA called <ca_name>"
+	echo "   buildca <ca_name>: combines the signca and genca steps in one"
+	echo "   exportcrl [<ca_name>]: export a CRL for the CA."
+	echo "   signsigner [<ca_name>]: sign a CSR for a designated OCSP signer"
+	echo "       certificate."
+	echo ""
+	echo " Commands for dealing with end-entity certificates:"
+	echo "  Note that all commands use the most recently generated CA by default."
+	echo "  Also, they all require that an intermediate CA has been built, first."
+	echo "   signkey [<ca_name>]: sign a card's key; requires that an intermediate"
+	echo "       CA has been built, first. Uses the most recnetly generated CA by"
+	echo "       default."
+	echo "   revoke [<ca_name>]: revoke a certificate."
+	echo ""
+	echo " The following environment variables are checked when the buildroot or genca"
+	echo " commands are being run:"
+	echo "  EID_TEST_CA_TYPE: The type of certificate chain that should be built."
+	echo "   Possible values:"
+	echo "    - sha256: for a SHA256-signed PKI with 10yr valid certificates."
+	echo "    - sha1: for a SHA1-signed PKI with 10yr valid certificates."
+	echo "    - old: for a SHA1-signed PKI with 5yr valid certificates."
+	echo "   Note that 5yr cards have 1024-bit keys, whereas 10yr cards have 2048-bit"
+	echo "   keys. It is *not* possible to sign a 1024-bit key under a sha1 or sha256"
+	echo "   root, and it is *not* possible to sign a 2048-bit key under an old root."
+	echo "  EID_TEST_CA_ORG: The name of the organization. Defaults to \"Acme, Inc\""
+	echo "  EID_TEST_CA_OCSP: The OCSP URL to be used on the certificates. Defaults to"
+	echo "   \"http://localhost/ocsp\""
+	echo "  EID_TEST_CA_CRL: the CRL URL to be used on the CA certificates. Defaults to"
+	echo "   \"http://localhost/crl\""
+	echo " Note that it is not possible to change these variables after the PKI has been"
+	echo " generated. If they were set wrongly, you need to rebuild the PKI from scratch."
+}
+
 case "$1" in
 	buildroot)
-		mkdir /var/lib/eid
+		export EID_TEST_ROOT_NAME=${EID_TEST_ROOT_NAME:-root}
 		cd /var/lib/eid
 		days=$(( ( $(date -d "now + $root_years years" +%s) - $(date -d now +%s) ) / 86400 ))
-		openssl req -batch -days $days -nodes -new -newkey rsa:$ca_size -x509 -sha$hash_alg -config /usr/share/eid-test/root/root.conf -keyout root.key -out root.crt
-		echo "Root CA created."
+		openssl req -batch -days $days -nodes -new -newkey rsa:$ca_size -x509 -sha$hash_alg -config /usr/share/eid-test/root/root.conf -keyout ${EID_TEST_ROOT_NAME}.key -out ${EID_TEST_ROOT_NAME}.crt
+		touch /var/lib/eid/${EID_TEST_ROOT_NAME}-index.txt
+		echo "01" > /var/lib/eid/${EID_TEST_ROOT_NAME}-serial
+		echo "Root CA \"$EID_TEST_ROOT_NAME\" created. Now generate the intermediate CA with the \"genca\" command."
 		writeconf=1
 	;;
 	genca)
-		if [ -z "$2" ]
-		then
-			echo "E: a name for the CA is required" >&2
-			exit 1
-		fi
+		export EID_TEST_CA_NAME="${EID_TEST_CA_NAME:-ca}"
+		cd /var/lib/eid
+		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e 's/[^[a-zA-Z0-9]]/_/g')
+		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ${EID_TEST_CA_NAME}.key -out ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/intermediate/ca.conf
+		echo "Intermediate CA \"$EID_TEST_CA_NAME\" generated."
 		writeconf=1
 	;;
 	signca)
-		echo "E: not yet implemented" >&2
-		exit 2
+		export EID_TEST_CA_NAME="${EID_TEST_CA_NAME:-ca}"
+		cd /var/lib/eid
+		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e "s/[^[a-zA-Z0-9]]/_/g")
+		days=$(( ( $(date -d "now + $ca_years years" +%s) - $(date -d now +%s) ) / 86400 ))
+		openssl ca -batch -days $days -out ${EID_TEST_CA_NAME}.crt -in ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/root/root.conf
+		echo "CA certificate for ca \"$EID_TEST_CA_NAME\" signed by \"$EID_TEST_ROOT_NAME\"."
+	;;
+	buildca)
+		shift
+		$0 genca "$@"
+		exec $0 signca "$@"
 	;;
 	run)
-		if [ ! -d /var/lib/eid/ -a ! -f /var/lib/eid/root.key ]
+		if [ ! -f "/var/lib/eid/${EID_TEST_ROOT_NAME}.key" ]
 		then
 			exec $0 "not initialized"
+			exit 1
 		fi
-		echo "E: not yet implemented" >&2
-		exit 2
+		systemctl start apache2
+		sleep
+	;;
+	ocspsigner)
+		notyet
+	;;
+	importcrl)
+		notyet
+	;;
+	importsigner)
+		notyet
+	;;
+	exportcrl)
+		notyet
+	;;
+	signsigner)
+		notyet
+	;;
+	signkey)
+		notyet
+	;;
+	revoke)
+		notyet
 	;;
 	*)
-		echo "E: Unsupported mode: $1. Known modes of operation:" >&2
-		echo "   buildroot: build the root CA and the RRN certificate" >&2
-		echo "" >&2
-		echo "   genca <ca_name>: build an intermediate CA called <ca_name>" >&2
-		echo "   signca: sign the certificate of an intermediate CA; requires" >&2
-		echo "       that the root has been built, first" >&2
-		echo "   gencrl: build a CRL (only supported by intermediate CA)" >&2
-		echo "" >&2
-		echo "   importcrl: import a CA's CRL (only necessary if the CA is"
-		echo "       not run inside the same container, and doesn't share" >&2
-		echo "       the /var/lib/eid volume with the root CA)" >&2
-		echo "   signkey: sign a card's key; requires that the intermediate CA" >&2
-		echo "       has been built, first." >&2
-		echo "   run: run the OCSP responder. This runs a webserver on port 80." >&2
+		echo "E: Unsupported request: $1. Known modes of operation:" >&2
+		usage
+
 		exit 1
 	;;
 esac
 
 if [ ! -z "$writeconf" ]
 then
-	echo "EID_TEST_CA_ORG=\"$EID_TEST_CA_ORG\"" > /var/lib/eid/config
-	echo "EID_TEST_CA_TYPE=\"$EID_TEST_CA_TYPE\"" >> /var/lib/eid/config
+	(
+		echo "EID_TEST_CA_ORG=\"$EID_TEST_CA_ORG\""
+		echo "EID_TEST_CA_TYPE=\"$EID_TEST_CA_TYPE\""
+		echo "EID_TEST_CA_OCSP=\"$EID_TEST_CA_OCSP\""
+		echo "EID_TEST_CA_CRL=\"$EID_TEST_CA_CRL\""
+		if [ ! -z "$EID_TEST_ROOT_NAME" ]
+		then
+			echo "EID_TEST_ROOT_NAME=\"$EID_TEST_ROOT_NAME\""
+		fi
+		if [ ! -z "$EID_TEST_CA_NAME" ]
+		then
+			echo "EID_TEST_CA_NAME=\"$EID_TEST_CA_NAME\""
+		fi
+	) >/var/lib/eid/config
 fi
