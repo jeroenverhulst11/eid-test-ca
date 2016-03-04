@@ -10,11 +10,19 @@ my ($fh, $filename) = tempfile();
 
 my $q = CGI->new();
 
-print $fh, $q->param('POSTDATA');
+my $data = $q->param('POSTDATA');
+
+if(!defined($data)) {
+	print $q->header("text/plain");
+	print "E: Require an OCSP request\n";
+	exit 0;
+}
+
+print $fh, $data;
 
 print $q->header('application/ocsp-response');
 
-open CONF, "/var/lib/eid/config"
+open CONF, "/var/lib/eid/config";
 
 my %conf;
 

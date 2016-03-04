@@ -1,13 +1,12 @@
 FROM debian:jessie
 MAINTAINER Wouter Verhelst <wouter.verhelst@fedict.be>
-RUN apt-get update && apt-get install -y apache2 openssl libcgi-pm-perl
-RUN a2enmod cgi
-ADD camanage /usr/bin/camanage
+RUN apt-get update && apt-get install -y apache2 openssl libcgi-pm-perl cron
+ADD bin/* /usr/local/bin/
 ADD root/* /usr/share/eid-test/root/
 ADD intermediate/* /usr/share/eid-test/intermediate/
-ADD cgi/* /usr/lib/cgi-bin/
 ADD eid-aliases.conf /etc/apache2/conf-available/
 RUN a2enconf eid-aliases
 EXPOSE 80
-ENTRYPOINT ["/usr/bin/camanage"]
+EXPOSE 8888
+ENTRYPOINT ["/usr/local/bin/camanage"]
 CMD ["run"]
