@@ -1,6 +1,6 @@
 FROM debian:jessie
 MAINTAINER Wouter Verhelst <wouter.verhelst@fedict.be>
-RUN apt-get update && apt-get install -y apache2 openssl libcgi-pm-perl cron
+RUN apt-get update && apt-get install -y apache2 openssl cron
 ADD bin/* /usr/local/bin/
 ADD root/* /usr/share/eid-test/root/
 ADD intermediate/* /usr/share/eid-test/intermediate/
