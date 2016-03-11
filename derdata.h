@@ -19,5 +19,7 @@ struct derdata* der_bitstring(void* data, uint64_t bits);
 struct derdata* der_longint(void* val, size_t len);
 struct derdata* der_bitder(struct derdata* data);
 struct derdata* der_setseqstr(struct derdata* object, char* string);
+struct derdata* derdata_new(size_t size);
+void derdata_destroy(struct derdata *d);
 
 #endif
