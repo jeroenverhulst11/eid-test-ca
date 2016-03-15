@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <sys/types.h>
 
 struct derdata {
 	uint8_t* data;

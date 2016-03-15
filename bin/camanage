@@ -120,12 +120,15 @@ case "$1" in
 			echo "E: cannot generate root certificate: it already exists!"
 			exit 1
 		fi
-		days=$(( ( $(date -d "now + $root_years years" +%s) - $(date -d now +%s) ) / 86400 ))
+		rootdays=$(( ( $(date -d "now + $root_years years" +%s) - $(date -d now +%s) ) / 86400 ))
+		rrndays=$(( ( $(date -d "now + $ca_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		openssl req -batch -days $days -nodes -new -newkey rsa:$ca_size -x509 -$hash_alg -config /usr/share/eid-test/root/root.conf -keyout ${EID_TEST_ROOT_NAME}.key -out ${EID_TEST_ROOT_NAME}.crt
 		touch /var/lib/eid/${EID_TEST_ROOT_NAME}-index.txt
 		echo "01" > /var/lib/eid/${EID_TEST_ROOT_NAME}-serial
 		openssl ca -batch -config /usr/share/eid-test/root/root.conf -gencrl -crldays 30 -out crls/${EID_TEST_ROOT_NAME}.crl
-		echo "Root CA \"$EID_TEST_ROOT_NAME\" created. Now generate the intermediate CA with the \"genca\" command."
+		openssl req -batch -nodes -new -newkey rsa:$key_size -keyout ${EID_TEST_ROOT_NAME}-rrn.key -out ${EID_TEST_ROOT_NAME}-rrn.csr -config /usr/share/eid-test/root/rrn.conf
+		openssl ca -batch -days $rrndays -out ${EID_TEST_ROOT_NAME}-rrn.crt -in ${EID_TEST_ROOT_NAME}-rrn.csr -config /usr/share/eid-test/root/rrn.conf
+		echo "Root CA \"$EID_TEST_ROOT_NAME\" and RRN certificate created. Now generate the intermediate CA with the \"genca\" command."
 		writeconf=1
 	;;
 	genca)
