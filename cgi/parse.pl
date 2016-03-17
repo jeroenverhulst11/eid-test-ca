@@ -5,6 +5,7 @@ use strict;
 
 use XML::SAX;
 use XML::SAX::Writer;
+use File::Temp qw/tempdir/;
 
 # Yes, I should be using something more modern. No, not now -- I would need to
 # learn first, and this is too urgent.
@@ -87,17 +88,20 @@ sub end_element {
 package main;
 
 my $q = CGI->new;
+$q->autoEscape(0);
 my @hidden;
 
 sub show_hiddens {
+	$q->autoEscape(1);
 	foreach my $hide(@hidden) {
 		print $q->hidden($hide);
 	}
+	$q->autoEscape(0);
 	print "\n";
 }
 
 sub get_cur_certs {
-	open INDEX, "index.txt";
+	open INDEX, "/var/lib/eid/ca-index.txt";
 	my $pems = ();
 	my $friendlies = {};
 	my $line;
@@ -114,9 +118,10 @@ sub get_cert {
 	my $crt = shift or die "need certificate type!";
 	my $type = shift;
 
-	print $q->start_html({-title=>'eID Test CA'});
+	print $q->header();
+	print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
 	print $q->h1('eID Test CA');
-	print $q->start_form({-method=>'post', -action=>'.'});
+	print $q->start_form({-method=>'post', -action=>$q->url});
 	show_hiddens;
 	if(!defined($type)) {
 		print $q->h2("Certificate selection");
@@ -144,12 +149,14 @@ sub get_cert {
 			die "unexpected certificate type: got $type, expected csr, none, or previous";
 		}
 	}
+	print $q->submit();
 	print $q->end_form();
 }
 
 my $xml_input = $q->param('xmlin');
 if(!defined($xml_input)) {
-	print $q->start_html({-title=>'eID Test CA'});
+	print $q->header();
+	print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
 	print <<EOF ;
     <h1>eID Test CA</h1>
     <h2>Note</h2>
@@ -166,7 +173,7 @@ if(!defined($xml_input)) {
     <p>In all other cases, the virtual card generator tool produces
       output that is sufficient.</p>
 EOF
-	print $q->start_form({-method=>"post", -action=>"."});
+	print $q->start_form({-method=>"post", -action=>$q->url});
     	print <<EOF ;
       <h2>XML data</h2>
       <p>Run the tool to generate virtual cards. This generates an XML
@@ -211,18 +218,57 @@ if(!defined($authtype) || ($authtype ne 'none' && !defined($authcsr) &&
 	push @hidden, "authold";
 }
 
-my %writefiles = (	"3F00DF014031" => "idfile.asn1",
-			"3F00DF014033" => "addressfile.asn1");
+# We have all the data we need now, so write them to a file and do stuff
 
-my %readfiles = (	"3F00DF014031" => "idfile.asn1",
-			"3F00DF014032" => "idsig",
-			"3F00DF014033" => "addressfile.asn1",
-			"3F00DF014034" => "addrsig",
-			"3F00DF005038" => "auth.der",
-			"3F00DF005039" => "sign.der",
-			"3F00DF00503A" => "ca.der",
-			"3F00DF00503B" => "root.der",
-			"3F00DF00503C" => "rrn.der");
+my $dir = tempdir(CLEANUP => 1);
+open XML, ">$dir/input.xml";
+print XML $xml_input;
+close XML;
+
+if($sigtype ne "none") {
+	if($sigtype eq "csr") {
+		open PEM, ">$dir/sig.csr";
+		print PEM $sigcsr;
+		close PEM;
+		system("camanage signkey < $dir/sig.csr > $dir/sig.pem 2>/dev/null"); 
+	} elsif($sigtype eq "previous") {
+		symlink "/var/lib/eid/ca/$sigold","$dir/sig.pem";
+	}
+	system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
+} else {
+	symlink "/dev/null", "$dir/sig.der";
+}
+
+if($authtype ne "none") {
+	if($authtype eq "csr") {
+		open PEM, ">$dir/auth.csr";
+		print PEM $authcsr;
+		close PEM;
+		system("camange signkey < $dir/auth.csr > $dir/auth.pem 2>/dev/null");
+	} elsif($sigtype eq "previous") {
+		symlink "/var/lib/eid/ca/$authold","$dir/auth.pem";
+	}
+	system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
+} else {
+	symlink "/dev/null", "$dir/auth.der";
+}
+
+system("openssl x509 -in /var/lib/eid/root.crt -outform der -out $dir/root.der");
+system("openssl x509 -in /var/lib/eid/ca.crt -outform der -out $dir/ca.der");
+system("openssl x509 -in /var/lib/eid/root-rrn.crt -outform der -out $dir/rrn.der");
+
+my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
+			"3F00DF014033" => "$dir/addressfile.asn1");
+
+my %readfiles = (	"3F00DF014031" => "$dir/idfile.asn1",
+			"3F00DF014032" => "$dir/idsig",
+			"3F00DF014033" => "$dir/addressfile.asn1",
+			"3F00DF014034" => "$dir/addrsig",
+			"3F00DF005038" => "$dir/auth.der",
+			"3F00DF005039" => "$dir/sig.der",
+			"3F00DF00503A" => "$dir/ca.der",
+			"3F00DF00503B" => "$dir/root.der",
+			"3F00DF00503C" => "$dir/rrn.der");
 
 my $w = XML::SAX::Writer->new();
 my $firstfilter = xmlfilter->new({writefiles => \%writefiles});
@@ -232,9 +278,10 @@ my $firstparser = XML::SAX::ParserFactory->parser(Handler => $firstfilter);
 my $secondparser = XML::SAX::ParserFactory->parser(Handler => $secondfilter);
 
 # Parse the XML file, so we can 
-$firstparser->parse_uri("test.foo");
+$firstparser->parse_uri("$dir/input.xml");
 
-system("~/code/eid-test-ca/resign idfile.asn1 idsig addressfile.asn1 addrsig ~/code/eid-test-ca/test/root.key 2");
+system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/root-rrn.key 2");
+print $q->header('text/plain');
 print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-$secondparser->parse_uri("test.foo");
+$secondparser->parse_uri("$dir/input.xml");
 

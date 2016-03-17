@@ -88,7 +88,7 @@ struct derdata* der_list(uint8_t tag, struct derdata* first, va_list ap) {
 	struct derdata* member = first;
 	struct derdata* length;
 	struct derdata* retval;
-	size_t len;
+	size_t len = 0;
 	uint8_t* ptr;
 
 	while(member) {
