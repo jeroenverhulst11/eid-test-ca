@@ -20,7 +20,7 @@ infrastructure.
 The fromcard tool is provided as a source file that must be modified and
 compiled:
 
-- Edit fromcard.c, and modify the #define lines at the start so that it
+- Edit fromcard.c, and modify the `#define` lines at the start so that it
   contains the data of the card as you wish to see it in the test
   environment.
 - Compile fromcard.c, cencode.c, and base64.h against the eID middleware
@@ -49,27 +49,28 @@ started, first install docker for your operating system. Then, do the
 following:
 
     docker pull fedict/eid-test-ca
-    docker run --name eid_test_store -v /var/lib/eid -ti fedict/eid-test-ca buildroot
-    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca buildca
-    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca signkey
+    docker run --name eid_test_store -v /var/lib/eid -ti fedict/eid-test-ca build
+    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca -p 80 -p 8888 run
 
-The last command will wait for a CSR on standard input. Paste one of the
-two certificates into its standard input, followed by EOF (ctrl+d). It
-will output a decoded version of the CSR (for verification purposes),
-and will then produce a CA-signed certificate. Take this into the test
-library tool. Repeat this step for the other certificate, if necessary.
+The last command will start an OCSP responder on port 8888, and a web
+server (containing the management interface and the CRLs) on port 80.
 
-Next, run the OCSP responder:
+## Retiring certificates
 
-    docker run --volumes-from=eid_test_store -ti -p 80:80 -p 8888:8888 fedict/eid-test-ca
-
-This will run a webserver on port 80 (serving the certificates and
-CRLs), and the OCSP responder on port 8888.
-
-To revoke a certificate, run the revoke command:
+To revoke a certificate, run the `revoke` command:
 
     docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca revoke <serial>
 
 replacing &lt;serial&gt; by the serial number of the certificate (that
 is, the certificate serial number as assigned by the CA, *not* the RRN
 number)
+
+To suspend a certificate, run the `suspend` command:
+
+    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca revoke <serial>
+
+where &lt;serial&gt; has the same meaning as in the `revoke` command,
+above.
+
+Future versions of this environment may make this available from the
+webinterface (patches welcome!)
