@@ -92,6 +92,7 @@ usage() {
 	echo ""
 	echo " General commands:"
 	echo "  updatecrls: rebuild all CRLs (for both intermediate and root CA)"
+	echo "  build: build the whole thing in one go"
 	echo ""
 	echo " The following environment variables are checked when the buildroot or genca"
 	echo " commands are being run:"
@@ -182,6 +183,10 @@ case "$1" in
 		cd /var/lib/eid
 		openssl ca -batch -config /usr/share/eid-test/root/root.conf -gencrl -crldays 30 -out crls/${EID_TEST_ROOT_NAME}.crl
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -gencrl -crldays 7 -out crls/${EID_TEST_CA_NAME}.crl
+	;;
+	build)
+		buildroot
+		buildca
 	;;
 	exportcrl)
 		notyet
