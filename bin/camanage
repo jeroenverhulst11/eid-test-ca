@@ -185,8 +185,8 @@ case "$1" in
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -gencrl -crldays 7 -out crls/${EID_TEST_CA_NAME}.crl
 	;;
 	build)
-		buildroot
-		buildca
+		$0 buildroot
+		$0 buildca
 	;;
 	exportcrl)
 		notyet

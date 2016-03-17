@@ -106,7 +106,7 @@ sub get_cur_certs {
 	my $friendlies = {};
 	my $line;
 	while($line = <INDEX>) {
-		my (undef, $serial, undef, undef, $friendly) = split /\t/, $line;
+		my (undef, undef, undef, $serial, undef, $friendly) = split /\t/, $line;
 		push @$pems, "$serial.pem";
 		$friendlies->{"$serial.pem"} = $friendly;
 	}
@@ -191,7 +191,7 @@ EOF
 
 my $sigtype = $q->param('sigtype');
 my $sigcsr = $q->param('sigcsr');
-my $sigold = $q->param('sigold');
+my $sigold = $q->param('sigserial');
 
 if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
 			!defined($sigold))) {
@@ -205,7 +205,7 @@ if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
 
 my $authtype = $q->param('authtype');
 my $authcsr = $q->param('authcsr');
-my $authold = $q->param('authold');
+my $authold = $q->param('authserial');
 
 if(!defined($authtype) || ($authtype ne 'none' && !defined($authcsr) &&
 		!defined ($authold))) {
@@ -219,7 +219,7 @@ if(!defined($authtype) || ($authtype ne 'none' && !defined($authcsr) &&
 
 # We have all the data we need now, so write them to a file and do stuff
 
-my $dir = tempdir(CLEANUP => 1);
+my $dir = tempdir();
 open XML, ">$dir/input.xml";
 print XML $xml_input;
 close XML;
