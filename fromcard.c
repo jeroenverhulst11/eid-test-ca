@@ -244,7 +244,7 @@ int main(void) {
 		printf("No signature key found on card, not generating a signature certificate\n");
 	} else {
 		pem = pem_csr(data);
-		printf("%s", pem);
+		printf("Signature certificate:\n%s", pem);
 		free(pem);
 	}
 	data = gen_csr(session, auth, SURNAME, GIVEN_NAMES, RRN_NUMBER, DO_SHA256);
@@ -252,7 +252,7 @@ int main(void) {
 		printf("No authentication key found on card, not generating an authentication certificate\n");
 	} else {
 		pem = pem_csr(data);
-		printf("%s", pem);
+		printf("Authentication certificate:\n%s", pem);
 		free(pem);
 	}
 	check_rv(C_CloseAllSessions(slot));
