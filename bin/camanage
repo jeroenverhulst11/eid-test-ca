@@ -142,6 +142,8 @@ case "$1" in
 		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ${EID_TEST_CA_NAME}.key -out ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/intermediate/ca.conf
 		touch /var/lib/eid/${EID_TEST_CA_NAME}-index.txt
 		echo "01" > /var/lib/eid/${EID_TEST_CA_NAME}-serial
+		mkdir -p /var/lib/eid/${EID_TEST_CA_NAME}
+		chmod -R go+w /var/lib/eid/
 		echo "Intermediate CA \"$EID_TEST_CA_NAME\" generated."
 		writeconf=1
 	;;

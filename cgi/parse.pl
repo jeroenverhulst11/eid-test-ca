@@ -125,7 +125,7 @@ sub get_cert {
 	show_hiddens;
 	if(!defined($type)) {
 		print $q->h2("Certificate selection");
-		print $q->p("Please choose a method for selecting the $crt certificate:");
+		print $q->p("Please choose a method for selecting the <strong><em>$crt</em></strong> certificate:");
 		print $q->radio_group(-name=>"${crt}type",
 				-values=>['csr', 'previous', 'none'],
 				-labels=>{ "csr" => "Upload a <abbr title='Certificate Signing Request'>CSR</abbr>",
@@ -138,7 +138,6 @@ sub get_cert {
 			print $q->p("Please paste the CSR (in PEM format) in the field below:");
 			print $q->textarea(-name=>"${crt}csr", -rows=>25, -columns=>80);
 			print $q->br();
-			print $q->submit();
 		} elsif($type eq "previous") {
 			my ($certlist, $certlabels) = get_cur_certs();
 			print $q->h2("Select an old $crt certificate");
@@ -230,7 +229,7 @@ if($sigtype ne "none") {
 		open PEM, ">$dir/sig.csr";
 		print PEM $sigcsr;
 		close PEM;
-		system("camanage signkey < $dir/sig.csr > $dir/sig.pem 2>/dev/null"); 
+		system("camanage signkey < $dir/sig.csr > $dir/sig.pem");
 	} elsif($sigtype eq "previous") {
 		symlink "/var/lib/eid/ca/$sigold","$dir/sig.pem";
 	}
@@ -244,7 +243,7 @@ if($authtype ne "none") {
 		open PEM, ">$dir/auth.csr";
 		print PEM $authcsr;
 		close PEM;
-		system("camange signkey < $dir/auth.csr > $dir/auth.pem 2>/dev/null");
+		system("camanage signkey < $dir/auth.csr > $dir/auth.pem");
 	} elsif($sigtype eq "previous") {
 		symlink "/var/lib/eid/ca/$authold","$dir/auth.pem";
 	}
