@@ -100,6 +100,11 @@ sub show_hiddens {
 	print "\n";
 }
 
+sub do_html {
+	print $q->header();
+	print $q->sart_html({-title=>'eID Test CA', -style=>'/style.css'});
+}
+
 sub get_cur_certs {
 	open INDEX, "/var/lib/eid/ca-index.txt";
 	my $pems = ();
@@ -118,8 +123,7 @@ sub get_cert {
 	my $crt = shift or die "need certificate type!";
 	my $type = shift;
 
-	print $q->header();
-	print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
+	do_html;
 	print $q->h1('eID Test CA');
 	print $q->start_form({-method=>'post', -action=>$q->url});
 	show_hiddens;
@@ -155,8 +159,7 @@ sub get_cert {
 sub sign {
 	my $xml_input = $q->param('xmlin');
 	if(!defined($xml_input)) {
-		print $q->header();
-		print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
+		do_html;
 		print <<EOF ;
 	    <h1>eID Test CA</h1>
 	    <h2>Note</h2>
@@ -289,8 +292,7 @@ EOF
 }
 
 sub notyet {
-	print $q->header();
-	print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
+	do_html;
 	print <<EOF ;
 	<h1>Not yet implemented</h1>
 EOF
