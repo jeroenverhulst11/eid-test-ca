@@ -91,6 +91,21 @@ my $q = CGI->new;
 $q->autoEscape(0);
 my @hidden;
 
+my %config;
+
+open CONFIG, "</var/lib/eid/config";
+
+while(<CONFIG>) {
+	chomp;
+	my ($key, $val) = split /=/;
+	next if (!($key =~ /^EID_TEST_(.*)$/));
+	$key = $1;
+	$val =~ s/^"(.*)"$/$1/;
+	$config{$key}=$val;
+}
+
+close CONFIG;
+
 sub show_hiddens {
 	$q->autoEscape(1);
 	foreach my $hide(@hidden) {
@@ -106,7 +121,7 @@ sub do_html {
 }
 
 sub get_cur_certs {
-	open INDEX, "/var/lib/eid/ca-index.txt";
+	open INDEX, "/var/lib/eid/" . $config{CA_NAME} . "-index.txt";
 	my $pems = ();
 	my $friendlies = {};
 	my $line;
@@ -236,7 +251,7 @@ EOF
 			close PEM;
 			system("camanage signkey < $dir/sig.csr > $dir/sig.pem");
 		} elsif($sigtype eq "previous") {
-			symlink "/var/lib/eid/ca/$sigold","$dir/sig.pem";
+			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$sigold","$dir/sig.pem";
 		}
 		system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
 	} else {
@@ -250,16 +265,16 @@ EOF
 			close PEM;
 			system("camanage signkey < $dir/auth.csr > $dir/auth.pem");
 		} elsif($sigtype eq "previous") {
-			symlink "/var/lib/eid/ca/$authold","$dir/auth.pem";
+			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$authold","$dir/auth.pem";
 		}
 		system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
 	} else {
 		symlink "/dev/null", "$dir/auth.der";
 	}
 
-	system("openssl x509 -in /var/lib/eid/root.crt -outform der -out $dir/root.der");
-	system("openssl x509 -in /var/lib/eid/ca.crt -outform der -out $dir/ca.der");
-	system("openssl x509 -in /var/lib/eid/root-rrn.crt -outform der -out $dir/rrn.der");
+	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . ".crt -outform der -out $dir/" . $config{ROOT_NAME} . ".der");
+	system("openssl x509 -in /var/lib/eid/" . $config{CA_NAME} . ".crt -outform der -out $dir/" . $config{CA_NAME} . ".der");
+	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.crt -outform der -out $dir/rrn.der");
 
 	my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
 				"3F00DF014033" => "$dir/addressfile.asn1");
@@ -270,8 +285,8 @@ EOF
 				"3F00DF014034" => "$dir/addrsig",
 				"3F00DF005038" => "$dir/auth.der",
 				"3F00DF005039" => "$dir/sig.der",
-				"3F00DF00503A" => "$dir/ca.der",
-				"3F00DF00503B" => "$dir/root.der",
+				"3F00DF00503A" => "$dir/" . $config{CA_NAME} . ".der",
+				"3F00DF00503B" => "$dir/" . $config{ROOT_NAME} . ".der",
 				"3F00DF00503C" => "$dir/rrn.der");
 
 	my $w = XML::SAX::Writer->new();
@@ -284,7 +299,8 @@ EOF
 	# Parse the XML file and grab contents we need to sign
 	$firstparser->parse_uri("$dir/input.xml");
 
-	system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/root-rrn.key 2");
+	my $alg = $config{CA_TYPE} eq "sha256" ? 2 : 1;
+	system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.key $alg");
 	print $q->header('text/plain');
 	print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	# Parse the same XML file a second time, substituting certain files
