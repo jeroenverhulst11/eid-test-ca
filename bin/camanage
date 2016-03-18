@@ -205,6 +205,7 @@ case "$1" in
 	;;
 	revoke)
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -revoke /var/lib/eid/"${EID_TEST_CA_NAME}"/"$2".pem
+		$0 updatecrls
 	;;
 	*)
 		echo "E: Unsupported request: $1. Known modes of operation:" >&2
