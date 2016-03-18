@@ -152,135 +152,187 @@ sub get_cert {
 	print $q->end_form();
 }
 
-my $xml_input = $q->param('xmlin');
-if(!defined($xml_input)) {
+sub sign {
+	my $xml_input = $q->param('xmlin');
+	if(!defined($xml_input)) {
+		print $q->header();
+		print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
+		print <<EOF ;
+	    <h1>eID Test CA</h1>
+	    <h2>Note</h2>
+	    <p>Using this form (and the CA) is only necessary in the following
+	    cases:</p>
+	    <ol>
+	      <li>You want to test OCSP requests against a live server</li>
+	      <li>You want to test address and identity file signature
+		verification using the SHA256 hashing algorithm, rather than the
+		SHA1 one.</li>
+	      <li>You want to test cards with more or fewer certificates than
+		are available on the card itself.</li>
+	    </ol>
+	    <p>In all other cases, the virtual card generator tool produces
+	      output that is sufficient.</p>
+EOF
+		print $q->start_form({-method=>"post", -action=>$q->url});
+		print <<EOF ;
+	      <h2>XML data</h2>
+	      <p>Run the tool to generate virtual cards. This generates an XML
+		file containing all the data that should be on the virtual card.
+		Paste it in this text area:</p>
+	      <textarea name="xmlin" rows="25" cols="80"></textarea>
+	      <br>
+	      <input type="submit">
+EOF
+		print $q->end_form();
+		print $q->end_html();
+		exit;
+	} else {
+		push @hidden, "xmlin";
+	}
+
+	my $sigtype = $q->param('sigtype');
+	my $sigcsr = $q->param('sigcsr');
+	my $sigold = $q->param('sigserial');
+
+	if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
+				!defined($sigold))) {
+		get_cert("sig", $sigtype);
+		exit;
+	} else {
+		push @hidden, 'sigtype';
+		push @hidden, 'sigcsr';
+		push @hidden, 'sigold';
+	}
+
+	my $authtype = $q->param('authtype');
+	my $authcsr = $q->param('authcsr');
+	my $authold = $q->param('authserial');
+
+	if(!defined($authtype) || ($authtype ne 'none' && !defined($authcsr) &&
+			!defined ($authold))) {
+		get_cert("auth", $authtype);
+		exit;
+	} else {
+		push @hidden, "authtype";
+		push @hidden, "authcsr";
+		push @hidden, "authold";
+	}
+
+	# We have all the data we need now, so write them to a file and do stuff
+
+	my $dir = tempdir();
+	open XML, ">$dir/input.xml";
+	print XML $xml_input;
+	close XML;
+
+	if($sigtype ne "none") {
+		if($sigtype eq "csr") {
+			open PEM, ">$dir/sig.csr";
+			print PEM $sigcsr;
+			close PEM;
+			system("camanage signkey < $dir/sig.csr > $dir/sig.pem");
+		} elsif($sigtype eq "previous") {
+			symlink "/var/lib/eid/ca/$sigold","$dir/sig.pem";
+		}
+		system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
+	} else {
+		symlink "/dev/null", "$dir/sig.der";
+	}
+
+	if($authtype ne "none") {
+		if($authtype eq "csr") {
+			open PEM, ">$dir/auth.csr";
+			print PEM $authcsr;
+			close PEM;
+			system("camanage signkey < $dir/auth.csr > $dir/auth.pem");
+		} elsif($sigtype eq "previous") {
+			symlink "/var/lib/eid/ca/$authold","$dir/auth.pem";
+		}
+		system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
+	} else {
+		symlink "/dev/null", "$dir/auth.der";
+	}
+
+	system("openssl x509 -in /var/lib/eid/root.crt -outform der -out $dir/root.der");
+	system("openssl x509 -in /var/lib/eid/ca.crt -outform der -out $dir/ca.der");
+	system("openssl x509 -in /var/lib/eid/root-rrn.crt -outform der -out $dir/rrn.der");
+
+	my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
+				"3F00DF014033" => "$dir/addressfile.asn1");
+
+	my %readfiles = (	"3F00DF014031" => "$dir/idfile.asn1",
+				"3F00DF014032" => "$dir/idsig",
+				"3F00DF014033" => "$dir/addressfile.asn1",
+				"3F00DF014034" => "$dir/addrsig",
+				"3F00DF005038" => "$dir/auth.der",
+				"3F00DF005039" => "$dir/sig.der",
+				"3F00DF00503A" => "$dir/ca.der",
+				"3F00DF00503B" => "$dir/root.der",
+				"3F00DF00503C" => "$dir/rrn.der");
+
+	my $w = XML::SAX::Writer->new();
+	my $firstfilter = xmlfilter->new({writefiles => \%writefiles});
+	my $secondfilter = xmlfilter->new({readfiles => \%readfiles});
+	$secondfilter->set_handler($w);
+	my $firstparser = XML::SAX::ParserFactory->parser(Handler => $firstfilter);
+	my $secondparser = XML::SAX::ParserFactory->parser(Handler => $secondfilter);
+
+	# Parse the XML file and grab contents we need to sign
+	$firstparser->parse_uri("$dir/input.xml");
+
+	system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/root-rrn.key 2");
+	print $q->header('text/plain');
+	print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+	# Parse the same XML file a second time, substituting certain files
+	# with others
+	$secondparser->parse_uri("$dir/input.xml");
+}
+
+sub notyet {
 	print $q->header();
 	print $q->start_html({-title=>'eID Test CA', -style=>"/style.css"});
 	print <<EOF ;
-    <h1>eID Test CA</h1>
-    <h2>Note</h2>
-    <p>Using this form (and the CA) is only necessary in the following
-    cases:</p>
-    <ol>
-      <li>You want to test OCSP requests against a live server</li>
-      <li>You want to test address and identity file signature
-	verification using the SHA256 hashing algorithm, rather than the
-	SHA1 one.</li>
-      <li>You want to test cards with more or fewer certificates than
-        are available on the card itself.</li>
-    </ol>
-    <p>In all other cases, the virtual card generator tool produces
-      output that is sufficient.</p>
+	<h1>Not yet implemented</h1>
+EOF
+}
+
+sub suspend {
+	notyet;
+}
+
+sub revoke {
+	notyet;
+}
+
+sub reinstate {
+	notyet;
+}
+
+my $action = $q->param("action");
+if(!defined($action)) {
+	do_html;
+	print <<EOF ;
+    <h2>eID Test CA</h1>
+    <h2>Action</h2>
+    <p>Please choose the action you wish to perform:</p>
 EOF
 	print $q->start_form({-method=>"post", -action=>$q->url});
-    	print <<EOF ;
-      <h2>XML data</h2>
-      <p>Run the tool to generate virtual cards. This generates an XML
-        file containing all the data that should be on the virtual card.
-	Paste it in this text area:</p>
-      <textarea name="xmlin" rows="25" cols="80"></textarea>
-      <br>
-      <input type="submit">
-EOF
-	print $q->end_form();
-	print $q->end_html();
+    	print $q->radio_group(-name=>"action",
+			-values=>['sign', 'suspend', 'revoke', 'reinstate'],
+			-labels=>{'sign'=>'Sign a card',
+				  'suspend'=>"Suspend (disable) a card's certificates",
+				  'revoke'=>"Revoke a card's certificates",
+				  'reinstate'=>"Reinstate a suspended certificate. <strong>Note</strong>: cannot be used for revoked certificates"})
 	exit;
-} else {
-	push @hidden, "xmlin";
 }
+push @hidden, "action";
 
-my $sigtype = $q->param('sigtype');
-my $sigcsr = $q->param('sigcsr');
-my $sigold = $q->param('sigserial');
-
-if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
-			!defined($sigold))) {
-	get_cert("sig", $sigtype);
-	exit;
-} else {
-	push @hidden, 'sigtype';
-	push @hidden, 'sigcsr';
-	push @hidden, 'sigold';
+if($action eq "sign") {
+	sign;
+} elsif($action eq "suspend") {
+	suspend;
+} elsif($action eq "revoke") {
+	revoke;
+} elsif($action eq "reinstate") {
+	reinstate;
 }
-
-my $authtype = $q->param('authtype');
-my $authcsr = $q->param('authcsr');
-my $authold = $q->param('authserial');
-
-if(!defined($authtype) || ($authtype ne 'none' && !defined($authcsr) &&
-		!defined ($authold))) {
-	get_cert("auth", $authtype);
-	exit;
-} else {
-	push @hidden, "authtype";
-	push @hidden, "authcsr";
-	push @hidden, "authold";
-}
-
-# We have all the data we need now, so write them to a file and do stuff
-
-my $dir = tempdir();
-open XML, ">$dir/input.xml";
-print XML $xml_input;
-close XML;
-
-if($sigtype ne "none") {
-	if($sigtype eq "csr") {
-		open PEM, ">$dir/sig.csr";
-		print PEM $sigcsr;
-		close PEM;
-		system("camanage signkey < $dir/sig.csr > $dir/sig.pem");
-	} elsif($sigtype eq "previous") {
-		symlink "/var/lib/eid/ca/$sigold","$dir/sig.pem";
-	}
-	system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
-} else {
-	symlink "/dev/null", "$dir/sig.der";
-}
-
-if($authtype ne "none") {
-	if($authtype eq "csr") {
-		open PEM, ">$dir/auth.csr";
-		print PEM $authcsr;
-		close PEM;
-		system("camanage signkey < $dir/auth.csr > $dir/auth.pem");
-	} elsif($sigtype eq "previous") {
-		symlink "/var/lib/eid/ca/$authold","$dir/auth.pem";
-	}
-	system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
-} else {
-	symlink "/dev/null", "$dir/auth.der";
-}
-
-system("openssl x509 -in /var/lib/eid/root.crt -outform der -out $dir/root.der");
-system("openssl x509 -in /var/lib/eid/ca.crt -outform der -out $dir/ca.der");
-system("openssl x509 -in /var/lib/eid/root-rrn.crt -outform der -out $dir/rrn.der");
-
-my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
-			"3F00DF014033" => "$dir/addressfile.asn1");
-
-my %readfiles = (	"3F00DF014031" => "$dir/idfile.asn1",
-			"3F00DF014032" => "$dir/idsig",
-			"3F00DF014033" => "$dir/addressfile.asn1",
-			"3F00DF014034" => "$dir/addrsig",
-			"3F00DF005038" => "$dir/auth.der",
-			"3F00DF005039" => "$dir/sig.der",
-			"3F00DF00503A" => "$dir/ca.der",
-			"3F00DF00503B" => "$dir/root.der",
-			"3F00DF00503C" => "$dir/rrn.der");
-
-my $w = XML::SAX::Writer->new();
-my $firstfilter = xmlfilter->new({writefiles => \%writefiles});
-my $secondfilter = xmlfilter->new({readfiles => \%readfiles});
-$secondfilter->set_handler($w);
-my $firstparser = XML::SAX::ParserFactory->parser(Handler => $firstfilter);
-my $secondparser = XML::SAX::ParserFactory->parser(Handler => $secondfilter);
-
-# Parse the XML file, so we can 
-$firstparser->parse_uri("$dir/input.xml");
-
-system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/root-rrn.key 2");
-print $q->header('text/plain');
-print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-$secondparser->parse_uri("$dir/input.xml");
-
