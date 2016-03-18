@@ -48,7 +48,7 @@ docker hub](https://hub.docker.com/f/fedict/eid-test-ca). To get
 started, first install docker for your operating system. Then, do the
 following:
 
-    docker pull fedict/eid-test-ca
+    docker pull fedict/eid-test-ca # fedict orga not yet available -- use wouterverhelst/ca
     docker run --name eid_test_store -v /var/lib/eid -ti fedict/eid-test-ca build
     docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca -p 80 -p 8888 run
 
@@ -67,13 +67,18 @@ number)
 
 To suspend a certificate, run the `suspend` command:
 
-    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca revoke <serial>
+    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca suspend <serial>
+
+To resume a suspended certificate, run the `resume` command:
+
+    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca resume <serial>
 
 where &lt;serial&gt; has the same meaning as in the `revoke` command,
 above.
 
-Future versions of this environment may make this available from the
-webinterface (patches welcome!)
+Alternatively, use the webinterface for this.
+
+NOTE: suspend/resume still TODO. Will be implemented ASAP.
 
 ## About
 
@@ -91,4 +96,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 A copy of the GNU General Public License can be found in the file
-COPYING.
+[COPYING](COPYING).
