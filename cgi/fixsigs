@@ -223,30 +223,30 @@ EOF
 
 	my $sigtype = $q->param('sigtype');
 	my $sigcsr = $q->param('sigcsr');
-	my $sigold = $q->param('sigserial');
+	my $sigserial = $q->param('sigserial');
 
 	if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
-				!defined($sigold))) {
+				!defined($sigserial))) {
 		get_cert("sig", $sigtype);
 		exit;
 	} else {
 		push @hidden, 'sigtype';
 		push @hidden, 'sigcsr';
-		push @hidden, 'sigold';
+		push @hidden, 'sigserial';
 	}
 
 	my $authtype = $q->param('authtype');
 	my $authcsr = $q->param('authcsr');
-	my $authold = $q->param('authserial');
+	my $authserial = $q->param('authserial');
 
 	if(!defined($authtype) || ($authtype ne 'none' && !defined($authcsr) &&
-			!defined ($authold))) {
+			!defined ($authserial))) {
 		get_cert("auth", $authtype);
 		exit;
 	} else {
 		push @hidden, "authtype";
 		push @hidden, "authcsr";
-		push @hidden, "authold";
+		push @hidden, "authserial";
 	}
 
 	# We have all the data we need now, so write them to a file and do stuff
@@ -263,7 +263,7 @@ EOF
 			close PEM;
 			system("camanage signkey < $dir/sig.csr > $dir/sig.pem");
 		} elsif($sigtype eq "previous") {
-			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$sigold","$dir/sig.pem";
+			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$sigserial","$dir/sig.pem";
 		}
 		system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
 	} else {
@@ -277,7 +277,7 @@ EOF
 			close PEM;
 			system("camanage signkey < $dir/auth.csr > $dir/auth.pem");
 		} elsif($sigtype eq "previous") {
-			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$authold","$dir/auth.pem";
+			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$authserial","$dir/auth.pem";
 		}
 		system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
 	} else {
