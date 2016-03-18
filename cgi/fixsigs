@@ -121,17 +121,29 @@ sub do_html {
 }
 
 sub get_cur_certs {
+	my $type = shift;
 	open INDEX, "/var/lib/eid/" . $config{CA_NAME} . "-index.txt";
 	my $pems = ();
 	my $friendlies = {};
+	my $states = {};
 	my $line;
 	while($line = <INDEX>) {
-		my (undef, undef, undef, $serial, undef, $friendly) = split /\t/, $line;
+		my ($status, undef, undef, $serial, undef, $friendly) = split /\t/, $line;
+		if(defined($type)) {
+			next unless $status eq $type;
+		}
 		push @$pems, "$serial.pem";
-		$friendlies->{"$serial.pem"} = $friendly;
+		if($status eq 'V') {
+			$status = '(valid)';
+		} elsif($status eq 'E') {
+			$status = '(expired)';
+		} elsif($status eq 'R') {
+			$status = '(revoked)';
+		}
+		$friendlies->{"$serial.pem"} = $friendly . " $status";
 	}
 
-	return ($pems, $friendlies);
+	return ($pems, $friendlies, $states);
 }
 
 sub get_cert {
@@ -326,7 +338,7 @@ sub revoke {
 	if(scalar(@certs) == 0) {
 		print $q->start_form({-method=>"post", -action=>$q->url});
 		show_hiddens;
-		my ($certlist, $certlabels) = get_cur_certs();
+		my ($certlist, $certlabels) = get_cur_certs('V');
 		print $q->p("Please select the certificates to revoke");
 		print $q->scrolling_list(-name=>'certs', -values=>$certlist, -labels=>$certlabels, -multiple=>'true');
 		print $q->submit;
