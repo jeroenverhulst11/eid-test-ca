@@ -102,7 +102,7 @@ sub show_hiddens {
 
 sub do_html {
 	print $q->header();
-	print $q->sart_html({-title=>'eID Test CA', -style=>'/style.css'});
+	print $q->start_html({-title=>'eID Test CA', -style=>'/style.css'});
 }
 
 sub get_cur_certs {
@@ -177,6 +177,7 @@ sub sign {
 	      output that is sufficient.</p>
 EOF
 		print $q->start_form({-method=>"post", -action=>$q->url});
+		show_hiddens;
 		print <<EOF ;
 	      <h2>XML data</h2>
 	      <p>Run the tool to generate virtual cards. This generates an XML
@@ -303,7 +304,30 @@ sub suspend {
 }
 
 sub revoke {
-	notyet;
+	do_html;
+	print $q->h1("Revoke certificates");
+	my @certs = $q->multi_param('certs');
+	if(scalar(@certs) == 0) {
+		print $q->start_form({-method=>"post", -action=>$q->url});
+		show_hiddens;
+		my ($certlist, $certlabels) = get_cur_certs();
+		print $q->p("Please select the certificates to revoke");
+		print $q->scrolling_list(-name=>'certs', -values=>$certlist, -labels=>$certlabels, -multiple=>'true');
+		print $q->submit;
+		print $q->end_form;
+		print $q->end_html;
+		exit;
+	}
+	push @hidden, 'certs';
+	print $q->p("Revoking certificates...");
+	print "<blockquote><code>";
+	foreach my $cert(@certs) {
+		my $serial = $cert;
+		$serial =~ s/\.pem$//;
+		print "$serial...\n";
+		system("camanage revoke $serial");
+	}
+	print "</code></blockquote>";
 }
 
 sub reinstate {
@@ -314,7 +338,7 @@ my $action = $q->param("action");
 if(!defined($action)) {
 	do_html;
 	print <<EOF ;
-    <h2>eID Test CA</h1>
+    <h1>eID Test CA</h1>
     <h2>Action</h2>
     <p>Please choose the action you wish to perform:</p>
 EOF
@@ -324,7 +348,10 @@ EOF
 			-labels=>{'sign'=>'Sign a card',
 				  'suspend'=>"Suspend (disable) a card's certificates",
 				  'revoke'=>"Revoke a card's certificates",
-				  'reinstate'=>"Reinstate a suspended certificate. <strong>Note</strong>: cannot be used for revoked certificates"})
+				  'reinstate'=>"Reinstate a suspended certificate. <strong>Note</strong>: cannot be used for revoked certificates"});
+	print $q->submit();
+	print $q->end_form();
+	print $q->end_html();
 	exit;
 }
 push @hidden, "action";
