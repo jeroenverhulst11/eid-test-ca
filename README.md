@@ -38,22 +38,53 @@ compiled:
 
 ## Using the PKI infrastructure
 
-The PKI infrastructure is just a shell script that runs openssl in the
-right ways so that it produces a CA infrastructure with OCSP responder
-that is as similar as possible to the official PKI.
+The PKI infrastructure is just a set of shell- and CGI scripts that run
+openssl in the right ways so that it produces a CA infrastructure with
+OCSP responder that is as similar as possible to the official PKI.
 
-It is possible to run the shell script directly on a Debian system;
-however, to keep matters easy, a Docker container is available at [the
-docker hub](https://hub.docker.com/f/fedict/eid-test-ca). To get
-started, first install docker for your operating system. Then, do the
-following:
+It is possible to run the infrastructure directly on a Debian system;
+however, to keep matters easy, a Docker container is available at the
+docker hub. To get started, first install docker for your operating
+system. Then, do the following:
 
-    docker pull fedict/eid-test-ca # fedict orga not yet available -- use wouterverhelst/ca
+    docker pull fedict/eid-test-ca # not yet available -- use wouterverhelst/ca for now
     docker run --name eid_test_store -v /var/lib/eid -ti fedict/eid-test-ca build
-    docker run --volumes-from=eid_test_store -ti fedict/eid-test-ca -p 80 -p 8888 run
 
-The last command will start an OCSP responder on port 8888, and a web
-server (containing the management interface and the CRLs) on port 80.
+You have now built an eID PKI infrastructure with SHA256 as the hashing
+algorithm and 10 year validity of the certificates. To create a PKI
+infrastructure with SHA1 instead, replace the second of the two above
+commands with:
+
+    docker run --name=eid_test_store -v /var/lib/eid -ti -e EID_TEST_CA_TYPE=sha1 fedict/eid-test-ca build
+
+or for SHA1 with 5 year validity (for cards with 1024-bit keys):
+
+    docker run --name=eid_test_store -v /var/lib/eid -ti -e EID_TEST_CA_TYPE=old fedict/eid-test-ca build
+
+There are a few other options available as well; for more information,
+run
+
+    docker run fedict/eid-test-ca help
+
+but note that many of the options listed there have not been implemented
+yet (for the current state of affairs, look at the [github
+repository](https://github.com/Fedict/eid-test-ca)
+
+It is possible to build all three on the same system if necessary,
+provided you pass a different argument to the `--name` option every
+time.
+
+Whenever you want to interact with the PKI, do:
+
+    docker run --volumes-from=eid_test_store -ti -p 80 -p 8888 fedict/eid-test-ca run
+
+This command will start an OCSP responder on port 8888, and a web server
+(containing the management interface and the CRLs) on port 80. If you
+already have something running on either of those two ports, you may
+need to use a different port; see the Docker documentation for details.
+
+When the above is running, open a browser to
+[localhost](http://localhost/). This contains links 
 
 ## Retiring certificates
 
