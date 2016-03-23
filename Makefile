@@ -9,4 +9,4 @@ bin/resign: derencode.c signdata.c resign.c
 	$(CC) $(CFLAGS) -o $@ `pkg-config --cflags --libs openssl` $^
 
 clean:
-	rm fromcard bin/resign
+	rm fromcard
