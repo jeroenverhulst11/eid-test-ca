@@ -47,7 +47,7 @@ however, to keep matters easy, a Docker container is available at the
 docker hub. To get started, first install docker for your operating
 system. Then, do the following:
 
-    docker pull fedict/eid-test-ca # not yet available -- use wouterverhelst/ca for now
+    docker pull fedict/eid-test-ca
     docker run --name eid_test_store -v /var/lib/eid -ti fedict/eid-test-ca build
 
 You have now built an eID PKI infrastructure with SHA256 as the hashing
