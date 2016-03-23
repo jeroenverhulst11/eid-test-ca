@@ -115,7 +115,7 @@ Alternatively, use the webinterface for this.
   details have been clarified.
 - Docker does not by default clean out containers. It may from time to
   time be necessary to run `docker ps -a` to get a list of older
-  containers, and `docker rm *id*`to clean them up.
+  containers, and `docker rm <id>` to clean them up.
 
 ## About
 
