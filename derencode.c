@@ -7,7 +7,10 @@
 #ifndef WIN32
 #include <arpa/inet.h>
 #else
-#include <winsock2.h>
+uint16_t htons(uint16_t f) {
+	uint16_t rv = (f & 0xFF) << 8;
+	rv |= (f & 0xFF00) >> 8;
+}
 #endif
 
 /* Helper functions for linked lists */
