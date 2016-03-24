@@ -25,8 +25,8 @@ compiled:
 - Edit fromcard.c, and modify the `#define` lines at the start so that it
   contains the data of the card as you wish to see it in the test
   environment.
-- Compile fromcard.c, cencode.c, and base64.h against the eID middleware
-  into a program.
+- Compile fromcard.c, derencode.c, base64encode.c, derdata.h, and base64.h
+  against the eID middleware into a program.
 - Run the fromcard program which was compiled in the previous step on a
   system with a single eID card in a reader.
 - Fromcard will cause the eID middleware to ask for your PIN code, and
