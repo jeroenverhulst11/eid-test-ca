@@ -6,12 +6,30 @@
 #include "base64enc.h"
 #include "derdata.h"
 
-#ifndef WIN32
+
+#ifndef _WIN32
 #include <unix.h>
-#else
-#include <win32.h>
-#endif
 #include <pkcs11.h>
+#else
+#include <Windows.h>
+//allign at 1 byte
+#pragma pack(push, cryptoki, 1)
+#include <win32.h>
+#include <pkcs11.h>
+#pragma pack(pop, cryptoki)
+//back to default allignment
+
+#define dlopen(lib,h) LoadLibrary(lib)
+#define dlsym(h, function) GetProcAddress(h, function)
+#define dlclose(h) FreeLibrary(h)
+#define PKCS11_LIB L"beidpkcs11.dll"
+#define RTLD_LAZY	1
+#define RTLD_NOW	2
+#define RTLD_GLOBAL 4
+
+CK_FUNCTION_LIST_PTR 	functions;
+
+#endif
 
 /** CUSTOMIZE THIS **/
 #define SURNAME "Geurdin"
@@ -21,6 +39,13 @@
 /** END OF LINES TO CUSTOMIZE **/
 
 #define check_rv(call) { CK_RV rv = call; if (rv != CKR_OK) { printf("E: %s failed: %d\n", #call, rv); exit(EXIT_FAILURE); } }
+
+#ifndef _WIN32
+#define get_func(C_function) C_function
+#else
+#define get_func(C_function) (*functions->C_function)
+#endif
+
 
 /* SEQUENCE { OBJECT (rsaEncryption), NULL } */
 static uint8_t rsaalg[] = {
@@ -131,19 +156,19 @@ struct derdata* gen_csr(CK_SESSION_HANDLE session, char* type, char* sn_str, cha
 	char *space;
 
 	/* Get the public half of the key */
-	check_rv(C_FindObjectsInit(session, tmpl, 2));
-	check_rv(C_FindObjects(session, &key, 1, &count));
+	check_rv(get_func(C_FindObjectsInit)(session, tmpl, 2));
+	check_rv(get_func(C_FindObjects)(session, &key, 1, &count));
 	if(count != 1) {
 		fprintf(stderr, "E: Could not read public key with label '%s': %lu found", type, count);
 		return NULL;
 	}
-	check_rv(C_GetAttributeValue(session, key, attr, 3));
-	check_rv(C_FindObjectsFinal(session));
+	check_rv(get_func(C_GetAttributeValue)(session, key, attr, 3));
+	check_rv(get_func(C_FindObjectsFinal)(session));
 	/* Get a handle to the private key */
 	klass = CKO_PRIVATE_KEY;
-	check_rv(C_FindObjectsInit(session, tmpl, 2));
-	check_rv(C_FindObjects(session, &key, 1, &count));
-	check_rv(C_FindObjectsFinal(session));
+	check_rv(get_func(C_FindObjectsInit)(session, tmpl, 2));
+	check_rv(get_func(C_FindObjects)(session, &key, 1, &count));
+	check_rv(get_func(C_FindObjectsFinal)(session));
 	if(count != 1) {
 		fprintf(stderr, "E: Could not find private key with label '%s': %lu found", type, count);
 		return NULL;
@@ -184,8 +209,8 @@ struct derdata* gen_csr(CK_SESSION_HANDLE session, char* type, char* sn_str, cha
 
 	/* Now sign the request */
 	mech.mechanism = do_256 ? CKM_SHA256_RSA_PKCS : CKM_SHA1_RSA_PKCS;
-	check_rv(C_SignInit(session, &mech, key));
-	check_rv(C_Sign(session, csr_unsigned->data, csr_unsigned->len, signature, &siglen));
+	check_rv(get_func(C_SignInit)(session, &mech, key));
+	check_rv(get_func(C_Sign)(session, csr_unsigned->data, csr_unsigned->len, signature, &siglen));
 	/* combine the CertificationRequestInfo with the signature to
 	 * produce a PKCS#10 CSR (or at least, something similar enough
 	 * for OpenSSL to accept it) */
@@ -234,9 +259,37 @@ int main(void) {
 	char* pem;
 	int fd;
 
-	check_rv(C_Initialize(NULL_PTR));
-	check_rv(C_GetSlotList(CK_TRUE, &slot, &count));
-	check_rv(C_OpenSession(slot, CKF_SERIAL_SESSION, NULL_PTR, NULL_PTR, &session));
+
+#ifdef _WIN32
+	int						hpkcs11 = NULL;
+	CK_C_GetFunctionList 	pC_GetFunctionList;
+	CK_RV 					rv;
+
+	hpkcs11 = dlopen(PKCS11_LIB, RTLD_LAZY); // RTLD_NOW is slower
+	if (hpkcs11 == NULL)
+	{
+		return -1;
+	}
+
+	// get function pointer to C_GetFunctionList
+	pC_GetFunctionList = (CK_C_GetFunctionList)dlsym(hpkcs11, "C_GetFunctionList");
+	if (pC_GetFunctionList == NULL)
+	{
+		dlclose(hpkcs11);
+		return -2;
+	}
+
+	// invoke C_GetFunctionList
+	rv = (*pC_GetFunctionList) (&functions);
+	if (rv != CKR_OK)
+	{
+		return -3;
+	}
+
+#endif
+	check_rv(get_func(C_Initialize)(NULL_PTR));
+	check_rv(get_func(C_GetSlotList)(CK_TRUE, &slot, &count));
+	check_rv(get_func(C_OpenSession)(slot, CKF_SERIAL_SESSION, NULL_PTR, NULL_PTR, &session));
 	/* This will fail if there is more than one eID card. Don't do
 	 * that. We want to keep this simple. */
 	data = gen_csr(session, sign, SURNAME, GIVEN_NAMES, RRN_NUMBER, DO_SHA256);
@@ -255,6 +308,9 @@ int main(void) {
 		printf("Authentication certificate:\n%s", pem);
 		free(pem);
 	}
-	check_rv(C_CloseAllSessions(slot));
-	check_rv(C_Finalize(NULL_PTR));
+	check_rv(get_func(C_CloseAllSessions)(slot));
+	check_rv(get_func(C_Finalize)(NULL_PTR));
+#ifdef _WIN32
+	dlclose(hpkcs11);
+#endif
 }

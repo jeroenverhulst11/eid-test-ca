@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "derdata.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <arpa/inet.h>
 #else
 uint16_t htons(uint16_t f) {
