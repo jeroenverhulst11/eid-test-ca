@@ -12,8 +12,10 @@ The testing environment consists of several components:
   certificates valid for the given card, but containing different
   metadata or signing algorithms than the one on the card.
 
-This repository contains the fromcard tool and the source for the PKI
-infrastructure.
+[This repository](https://github.com/fedict/eid-test-ca/) contains the
+fromcard tool and the source for the PKI infrastructure. For the virtual
+card generation tool, see the [eid-test-cards
+repository](https://github.com/Fedict/eid-test-cards)
 
 ## Using fromcard
 
