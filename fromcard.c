@@ -203,7 +203,7 @@ struct derdata* gen_csr(CK_SESSION_HANDLE session, char* type, char* sn_str, cha
 				),
 			NULL
 			),
-		attributes,
+		&attributes,
 		NULL
 		);
 
