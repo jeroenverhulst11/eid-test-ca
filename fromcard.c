@@ -13,10 +13,10 @@
 #else
 #include <Windows.h>
 //allign at 1 byte
-#pragma pack(push, cryptoki, 1)
+//#pragma pack(push, cryptoki, 1)
 #include <win32.h>
 #include <pkcs11.h>
-#pragma pack(pop, cryptoki)
+//#pragma pack(pop, cryptoki)
 //back to default allignment
 
 #define dlopen(lib,h) LoadLibrary(lib)
