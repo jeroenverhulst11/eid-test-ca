@@ -88,7 +88,9 @@ usage() {
 	echo "   signkey [<ca_name>]: sign a card's key; requires that an intermediate"
 	echo "       CA has been built, first. Uses the most recnetly generated CA by"
 	echo "       default."
-	echo "   revoke [<ca_name>]: revoke a certificate."
+	echo "   revoke [serial]: revoke a certificate."
+	echo "   suspend [serial]: suspend a certificate."
+	echo "   reinstate [serial]: reinstate a suspended or revoked certificate."
 	echo ""
 	echo " General commands:"
 	echo "  updatecrls: rebuild all CRLs (for both intermediate and root CA)"
@@ -206,6 +208,17 @@ case "$1" in
 	revoke)
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -revoke /var/lib/eid/"${EID_TEST_CA_NAME}"/"$2".pem
 		$0 updatecrls
+	;;
+	suspend)
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -revoke /var/lib/eid/"${EID_TEST_CA_NAME}"/"$2".pem -crl_reason certificateHold
+		$0 updatecrls
+	;;
+	reinstate)
+		# Unfortunately, OpenSSL doesn't have a commend to "unrevoke" a
+		# certificate, even if the certificate is just set to hold.
+		# Luckily, the ca "database" is just a text file...
+		cp /var/lib/eid/"${EID_TEST_CA_NAME}"-index.txt /var/lib/eid/"${EID_TEST_CA_NAME}"-index.txt.old
+		perl -i -e 'while(<>) { my @arr = split(/\t/); if ($arr[0] eq "R" && $arr[3] eq "'$2'") { print join("\t", ("V", $arr[1], "", @arr[3..5])) } else { print $_; } }' /var/lib/eid/"$EID_TEST_CA_NAME"-index.txt
 	;;
 	*)
 		echo "E: Unsupported request: $1. Known modes of operation:" >&2
