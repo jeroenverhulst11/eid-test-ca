@@ -320,13 +320,6 @@ EOF
 	$secondparser->parse_uri("$dir/input.xml");
 }
 
-sub notyet {
-	do_html;
-	print <<EOF ;
-	<h1>Not yet implemented</h1>
-EOF
-}
-
 sub suspend {
 	do_html;
 	print $q->h1("Suspend certificates");
@@ -345,14 +338,13 @@ sub suspend {
 	push @hidden, 'certs';
 	print $q->p("Suspending certificates...");
 	print "<blockquote><code>";
-	print "suspending...\n";
 	foreach my $cert(@certs) {
 		my $serial = $cert;
 		$serial =~ s/\.pem$//;
 		print "$serial...\n";
 		system("camanage suspend $serial");
 	}
-	print "suspend complete\n";
+	print "done\n";
 	print "</code></blockquote>";
 }
 
@@ -374,26 +366,25 @@ sub revoke {
 	push @hidden, 'certs';
 	print $q->p("Revoking certificates...");
 	print "<blockquote><code>";
-	print "revoking...\n";
 	foreach my $cert(@certs) {
 		my $serial = $cert;
 		$serial =~ s/\.pem$//;
 		print "$serial...\n";
 		system("camanage revoke $serial");
 	}
-	print "revocation complete\n";
+	print "done\n";
 	print "</code></blockquote>";
 }
 
 sub reinstate {
 	do_html;
-	print $q->h1("Revoke certificates");
+	print $q->h1("Reinstate certificates");
 	my @certs = $q->multi_param('certs');
 	if(scalar(@certs) == 0) {
 		print $q->start_form({-method=>"post", -action=>$q->url});
 		show_hiddens;
-		my ($certlist, $certlabels) = get_cur_certs('V');
-		print $q->p("Please select the certificates to revoke");
+		my ($certlist, $certlabels) = get_cur_certs('R');
+		print $q->p("Please select the certificates to reinstate");
 		print $q->scrolling_list(-name=>'certs', -values=>$certlist, -labels=>$certlabels, -multiple=>'true');
 		print $q->submit;
 		print $q->end_form;
@@ -401,16 +392,15 @@ sub reinstate {
 		exit;
 	}
 	push @hidden, 'certs';
-	print $q->p("Revoking certificates...");
+	print $q->p("Reinstating certificates...");
 	print "<blockquote><code>";
-	print "revoking...\n";
 	foreach my $cert(@certs) {
 		my $serial = $cert;
 		$serial =~ s/\.pem$//;
 		print "$serial...\n";
 		system("camanage reinstate $serial");
 	}
-	print "revocation complete\n";
+	print "done\n";
 	print "</code></blockquote>";
 }
 
@@ -428,7 +418,7 @@ EOF
 			-labels=>{'sign'=>'Sign a card',
 				  'suspend'=>"Suspend (disable) a card's certificates",
 				  'revoke'=>"Revoke a card's certificates",
-				  'reinstate'=>"Reinstate a suspended certificate. <strong>Note</strong>: cannot be used for revoked certificates"});
+				  'reinstate'=>"Reinstate a suspended or revoked certificate. <strong>Note:</strong> while this implementation allows to reinstate a revoked certificate, the production PKI does not."});
 	print $q->submit();
 	print $q->end_form();
 	print $q->end_html();
