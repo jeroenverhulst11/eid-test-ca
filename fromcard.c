@@ -31,13 +31,6 @@ CK_FUNCTION_LIST_PTR 	functions;
 
 #endif
 
-/** CUSTOMIZE THIS **/
-#define SURNAME "Geurdin"
-#define GIVEN_NAMES "Altay Mergo"
-#define RRN_NUMBER "39012940734"
-#define DO_SHA256 1
-/** END OF LINES TO CUSTOMIZE **/
-
 #define check_rv(call) { CK_RV rv = call; if (rv != CKR_OK) { printf("E: %s failed: %d\n", #call, rv); exit(EXIT_FAILURE); } }
 
 #ifndef _WIN32
@@ -249,7 +242,7 @@ char* pem_csr(struct derdata* csr) {
 	return retval;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
 	CK_SESSION_HANDLE session;
 	CK_SLOT_ID slot;
 	char auth[] = "Authentication";
@@ -258,7 +251,8 @@ int main(void) {
 	struct derdata* data;
 	char* pem;
 	int fd;
-
+	int do_256;
+	char *given, *sur, *rrn;
 
 #ifdef _WIN32
 	int						hpkcs11 = NULL;
@@ -287,12 +281,31 @@ int main(void) {
 	}
 
 #endif
+	if(argc != 5) {
+		fprintf(stderr, "E: Require four arguments: given name(s), last name, RRN number, SHA algorithm\n");
+		fprintf(stderr, "e.g.: %s 'Altay Mergo' Geurdin 39012940734 1 (for SHA1)\n", argv[0]);
+		fprintf(stderr, "or  : %s 'Altay Mergo' Geurdin 39012940734 256 (for SHA256)\n", argv[0]);
+		return -1;
+	}
+
+	given = argv[1];
+	sur = argv[2];
+	rrn = argv[3];
+	if(strcmp(argv[4], "1") == 0) {
+		do_256 = 0;
+	} else if (strcmp(argv[4], "256") == 0) {
+		do_256 = 1;
+	} else {
+		fprintf(stderr, "E: unknown SHA algorithm: %s\n", argv[4]);
+		return -1;
+	}
+
 	check_rv(get_func(C_Initialize)(NULL_PTR));
 	check_rv(get_func(C_GetSlotList)(CK_TRUE, &slot, &count));
 	check_rv(get_func(C_OpenSession)(slot, CKF_SERIAL_SESSION, NULL_PTR, NULL_PTR, &session));
 	/* This will fail if there is more than one eID card. Don't do
 	 * that. We want to keep this simple. */
-	data = gen_csr(session, sign, SURNAME, GIVEN_NAMES, RRN_NUMBER, DO_SHA256);
+	data = gen_csr(session, sign, sur, given, rrn, do_256);
 	if(!data) {
 		printf("No signature key found on card, not generating a signature certificate\n");
 	} else {
@@ -300,7 +313,7 @@ int main(void) {
 		printf("Signature certificate:\n%s", pem);
 		free(pem);
 	}
-	data = gen_csr(session, auth, SURNAME, GIVEN_NAMES, RRN_NUMBER, DO_SHA256);
+	data = gen_csr(session, auth, sur, given, rrn, do_256);
 	if(!data) {
 		printf("No authentication key found on card, not generating an authentication certificate\n");
 	} else {
