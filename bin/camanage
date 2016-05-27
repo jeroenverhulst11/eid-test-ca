@@ -85,9 +85,12 @@ usage() {
 	echo " Commands for dealing with end-entity certificates:"
 	echo "  Note that all commands use the most recently generated CA by default."
 	echo "  Also, they all require that an intermediate CA has been built, first."
-	echo "   signkey [<ca_name>]: sign a card's key; requires that an intermediate"
-	echo "       CA has been built, first. Uses the most recnetly generated CA by"
-	echo "       default."
+	echo "   signsig [<ca_name>]: sign a card's signature key; requires that an"
+	echo "       intermediate CA has been built, first. Uses the most recently"
+	echo "       generated CA by default."
+	echo "   signauth [<ca_name>]: sign a card's authentication key; requires that"
+	echo "       an intermediate CA has been built, irst. Uses the most recently"
+	echo "       generated CA by default."
 	echo "   revoke [serial]: revoke a certificate."
 	echo "   suspend [serial]: suspend a certificate."
 	echo "   reinstate [serial]: reinstate a suspended or revoked certificate."
@@ -130,7 +133,7 @@ case "$1" in
 		echo "01" > /var/lib/eid/${EID_TEST_ROOT_NAME}-serial
 		openssl ca -batch -config /usr/share/eid-test/root/root.conf -gencrl -crldays 30 -out crls/${EID_TEST_ROOT_NAME}.crl
 		openssl req -batch -nodes -new -newkey rsa:$key_size -keyout ${EID_TEST_ROOT_NAME}-rrn.key -out ${EID_TEST_ROOT_NAME}-rrn.csr -config /usr/share/eid-test/root/rrn.conf
-		openssl ca -batch -days $rrndays -out ${EID_TEST_ROOT_NAME}-rrn.crt -in ${EID_TEST_ROOT_NAME}-rrn.csr -config /usr/share/eid-test/root/root.conf
+		openssl ca -batch -days $rrndays -out ${EID_TEST_ROOT_NAME}-rrn.crt -in ${EID_TEST_ROOT_NAME}-rrn.csr -config /usr/share/eid-test/root/root.conf -extensions rrn_exts
 		echo "Root CA \"$EID_TEST_ROOT_NAME\" and RRN certificate created. Now generate the intermediate CA with the \"genca\" command."
 		writeconf=1
 	;;
@@ -154,7 +157,7 @@ case "$1" in
 		cd /var/lib/eid
 		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e "s/[^[a-zA-Z0-9]]/_/g")
 		days=$(( ( $(date -d "now + $ca_years years" +%s) - $(date -d now +%s) ) / 86400 ))
-		openssl ca -batch -days $days -out ${EID_TEST_CA_NAME}.crt -in ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/root/root.conf
+		openssl ca -batch -days $days -out ${EID_TEST_CA_NAME}.crt -in ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/root/root.conf -extensions int_exts
 		echo "CA certificate for ca \"$EID_TEST_CA_NAME\" signed by \"$EID_TEST_ROOT_NAME\"."
 	;;
 	buildca)
@@ -197,13 +200,22 @@ case "$1" in
 	signsigner)
 		notyet
 	;;
-	signkey)
+	signsig)
 		cat > /tmp/req.pem
 		openssl req -in /tmp/req.pem -noout -text >&2
 		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e "s/[^[a-zA-Z0-9]]/_/g")
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/${EID_TEST_CA_NAME}
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts
+		cat /tmp/certout.pem
+	;;
+	signauth)
+		cat > /tmp/req.pem
+		openssl req -in /tmp/req.pem -noout -text >&2
+		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e "s/[^[a-zA-Z0-9]]/_/g")
+		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
+		mkdir -p /var/lib/eid/${EID_TEST_CA_NAME}
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts
 		cat /tmp/certout.pem
 	;;
 	revoke)

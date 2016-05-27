@@ -261,7 +261,7 @@ EOF
 			open PEM, ">$dir/sig.csr";
 			print PEM $sigcsr;
 			close PEM;
-			system("camanage signkey < $dir/sig.csr > $dir/sig.pem");
+			system("camanage signsig < $dir/sig.csr > $dir/sig.pem");
 		} elsif($sigtype eq "previous") {
 			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$sigserial","$dir/sig.pem";
 		}
@@ -275,7 +275,7 @@ EOF
 			open PEM, ">$dir/auth.csr";
 			print PEM $authcsr;
 			close PEM;
-			system("camanage signkey < $dir/auth.csr > $dir/auth.pem");
+			system("camanage signauth < $dir/auth.csr > $dir/auth.pem");
 		} elsif($sigtype eq "previous") {
 			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$authserial","$dir/auth.pem";
 		}
