@@ -22,13 +22,13 @@ repository](https://github.com/Fedict/eid-test-cards)
 The fromcard tool is provided as a source file that must be modified and
 compiled:
 
-- Edit fromcard.c, and modify the `#define` lines at the start so that it
-  contains the data of the card as you wish to see it in the test
-  environment.
 - Compile fromcard.c, derencode.c, base64encode.c, derdata.h, and base64.h
-  against the eID middleware into a program.
+  against the eID middleware into a program. Alternatively, download the
+  precompiled version.
 - Run the fromcard program which was compiled in the previous step on a
-  system with a single eID card in a reader.
+  system with a single eID card in a reader, passing it the given
+  name(s), last name, national registry number, and hashing algorithm (1
+  or 256) to use.
 - Fromcard will cause the eID middleware to ask for your PIN code, and
   will then generate a CSR for the Signature and the Authentication
   keys, in that order, with the metadata as specified at the top of
