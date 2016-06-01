@@ -24,7 +24,7 @@ compiled:
 
 - Compile fromcard.c, derencode.c, base64encode.c, derdata.h, and base64.h
   against the eID middleware into a program. Alternatively, download the
-  precompiled version.
+  [precompiled version](scripts/windows/FromCard.exe).
 - Run the fromcard program which was compiled in the previous step on a
   system with a single eID card in a reader, passing it the given
   name(s), last name, national registry number, and hashing algorithm (1
