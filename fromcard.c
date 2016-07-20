@@ -31,7 +31,7 @@ CK_FUNCTION_LIST_PTR 	functions;
 
 #endif
 
-#define check_rv(call) { CK_RV rv = call; if (rv != CKR_OK) { printf("E: %s failed: %d\n", #call, rv); exit(EXIT_FAILURE); } }
+#define check_rv(call) { CK_RV rv = call; if (rv != CKR_OK) { printf("E: %s failed: %#010x\n", #call, rv); exit(EXIT_FAILURE); } }
 
 #ifndef _WIN32
 #define get_func(C_function) C_function
