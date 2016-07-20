@@ -283,8 +283,8 @@ int main(int argc, char** argv) {
 #endif
 	if(argc != 5) {
 		fprintf(stderr, "E: Require four arguments: given name(s), last name, RRN number, SHA algorithm\n");
-		fprintf(stderr, "e.g.: %s 'Altay Mergo' Geurdin 39012940734 1 (for SHA1)\n", argv[0]);
-		fprintf(stderr, "or  : %s 'Altay Mergo' Geurdin 39012940734 256 (for SHA256)\n", argv[0]);
+		fprintf(stderr, "e.g.: %s \"Altay Mergo\" Geurdin 39012940734 1 (for SHA1)\n", argv[0]);
+		fprintf(stderr, "or  : %s \"Altay Mergo\" Geurdin 39012940734 256 (for SHA256)\n", argv[0]);
 		return -1;
 	}
 
