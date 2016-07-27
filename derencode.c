@@ -4,15 +4,6 @@
 #include <assert.h>
 #include "derdata.h"
 
-#ifndef _WIN32
-#include <arpa/inet.h>
-#else
-uint16_t htons(uint16_t f) {
-	uint16_t rv = (f & 0xFF) << 8;
-	rv |= (f & 0xFF00) >> 8;
-}
-#endif
-
 /* Helper functions for linked lists */
 struct list {
 	void* data;
@@ -77,10 +68,10 @@ struct derdata* der_length(size_t len) {
 		return retval;
 	}
 	if(len <= 0xFFFF) {
-		uint16_t val = htons(len);
 		retval = derdata_new(3);
 		retval->data[0] = 0x82;
-		memcpy(retval->data+1, &val, 2);
+		retval->data[1] = (len & 0xFF00) >> 8;
+		retval->data[2] = len & 0xFF;
 		return retval;
 	}
 	assert(1 == 0); // we don't generate such long data
