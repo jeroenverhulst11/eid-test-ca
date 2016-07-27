@@ -289,8 +289,7 @@ EOF
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.crt -outform der -out $dir/rrn.der");
 
 	my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
-				"3F00DF014033" => "$dir/addressfile.asn1",
-				"3F00DF014035" => "$dir/photo.jpg");
+				"3F00DF014033" => "$dir/addressfile.asn1");
 
 	my %readfiles = (	"3F00DF014031" => "$dir/idfile.asn1",
 				"3F00DF014032" => "$dir/idsig",
@@ -313,7 +312,7 @@ EOF
 	$firstparser->parse_uri("$dir/input.xml");
 
 	my $alg = $config{CA_TYPE} eq "sha256" ? 2 : 1;
-	system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/photo.jpg $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.key $alg");
+	system("/usr/local/bin/resign $dir/idfile.asn1 $dir/idsig $dir/addressfile.asn1 $dir/addrsig /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.key $alg");
 	print $q->header('text/plain');
 	print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	# Parse the same XML file a second time, substituting certain files

@@ -2,62 +2,23 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
 
 #include <openssl/x509.h>
 #include <openssl/rsa.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 
-#define PHOTO_HASH_TAG 0x11
-
-void* set_photohash(struct derdata* idfile, char* photofn, int hashnid) {
-	char tag, length = 0;
-	uint8_t* ptr = (char*)idfile->data;
-	struct derdata* rv = idfile;
-	const EVP_MD *hash = EVP_get_digestbynid(hashnid);
-	int hashlen = EVP_MD_size(hash);
-
-	do {
-		ptr += length;
-		tag = *ptr++; length = *ptr++;
-	} while(tag != PHOTO_HASH_TAG);
-	if(length != hashlen) {
-		int offset = (ptr - (idfile->data)) - 1;
-		rv = derdata_new(idfile->len + (hashlen - length));
-		memcpy(rv->data, idfile->data, offset);
-		memcpy(rv->data + offset + 1 + hashlen, ptr + length, (idfile->data - ptr) - length);
-		ptr = (char*)(rv->data + offset);
-		*++ptr = (char)hashlen;
-		FILE* f = fopen(photofn, "rb");
-		fseek(f, 0, SEEK_END);
-		size_t plen = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		struct derdata *photo = derdata_new(plen);
-		fread(photo->data, plen, 1, f);
-		fclose(f);
-		EVP_MD_CTX ctx;
-		EVP_DigestInit(&ctx, hash);
-		EVP_DigestUpdate(&ctx, photo->data, plen);
-		EVP_DigestFinal(&ctx, ptr, NULL);
-		derdata_destroy(photo);
-		derdata_destroy(idfile);
-	}
-	return rv;
-}
-
 int main(int argc, char** argv) {
-	assert(argc >= 7);
+	assert(argc >= 6);
 
 	char* id_fn = argv[1];
 	char* sigout_fn = argv[2];
-	char* photo_fn = argv[3];
-	char* address_fn = argv[4];
-	char* addout_fn = argv[5];
-	char* privkey_fn = argv[6];
+	char* address_fn = argv[3];
+	char* addout_fn = argv[4];
+	char* privkey_fn = argv[5];
 	int hashnid;
-	if(argc > 7) {
-		switch(argv[7][0]) {
+	if(argc > 6) {
+		switch(argv[6][0]) {
 			case '1':
 				hashnid = NID_sha1;
 				break;
@@ -100,8 +61,6 @@ int main(int argc, char** argv) {
 	struct derdata* address = derdata_new(size);
 	fread(address->data, size, 1, f);
 	fclose(f);
-
-	id = set_photohash(id, photo_fn, hashnid);
 
 	struct derdata* id_sign = sign_id(id, hashnid, key_id);
 	struct derdata* address_sign = sign_address(id_sign, address, hashnid, key_address);
