@@ -23,21 +23,25 @@ void* set_photohash(struct derdata* idfile, char* photofn, int hashnid) {
 		tag = *ptr++; length = *ptr++;
 	} while(tag != PHOTO_HASH_TAG);
 	if(length != hashlen) {
+		FILE *f;
+		struct derdata *photo;
 		int offset = (ptr - (idfile->data));
+		size_t plen;
+		EVP_MD_CTX ctx;
 		rv = derdata_new(idfile->len + (hashlen - length));
 		memcpy(rv->data, idfile->data, idfile->len);
 		memmove(rv->data + offset + hashlen, rv->data + offset + length, idfile->len - offset - length);
 		ptr = (char*)(rv->data + offset);
 		ptr[-1] = (uint8_t)hashlen;
 
-		FILE* f = fopen(photofn, "rb");
+		f = fopen(photofn, "rb");
 		fseek(f, 0, SEEK_END);
-		size_t plen = ftell(f);
+		plen = ftell(f);
 		fseek(f, 0, SEEK_SET);
-		struct derdata *photo = derdata_new(plen);
+		photo = derdata_new(plen);
 		fread(photo->data, plen, 1, f);
 		fclose(f);
-		EVP_MD_CTX ctx;
+
 		EVP_DigestInit(&ctx, hash);
 		EVP_DigestUpdate(&ctx, photo->data, plen);
 		EVP_DigestFinal(&ctx, ptr, NULL);
