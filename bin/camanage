@@ -250,6 +250,7 @@ then
 		echo "EID_TEST_CA_OCSP=\"$EID_TEST_CA_OCSP\""
 		echo "EID_TEST_CA_CRL=\"$EID_TEST_CA_CRL\""
 		echo "EID_TEST_ROOT_CRL=\"$EID_TEST_ROOT_CRL\""
+		echo "EID_TEST_ROOT_CA=\"$EID_TEST_ROOT_CA\""
 		if [ ! -z "$EID_TEST_ROOT_NAME" ]
 		then
 			echo "EID_TEST_ROOT_NAME=\"$EID_TEST_ROOT_NAME\""
