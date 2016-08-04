@@ -26,6 +26,7 @@ export EID_TEST_CA_ORG="${EID_TEST_CA_ORG:-Acme, Inc}"
 export EID_TEST_CA_OCSP="${EID_TEST_CA_OCSP:-http://localhost:8888/}"
 export EID_TEST_CA_CRL="${EID_TEST_CA_CRL:-http://localhost/crl/${EID_TEST_CA_NAME}.crl}"
 export EID_TEST_ROOT_CRL="${EID_TEST_ROOT_CRL:-http://localhost/crl/${EID_TEST_ROOT_NAME}.crl}"
+export EID_TEST_ROOT_CA="${EID_TEST_ROOT_CA:-http://localhost/ca/${EID_TEST_ROOT_NAME}.crt"
 
 case "$EID_TEST_CA_TYPE" in
 	sha256)
