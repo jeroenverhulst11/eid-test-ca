@@ -86,7 +86,8 @@ already have something running on either of those two ports, you may
 need to use a different port; see the Docker documentation for details.
 
 When the above is running, open a browser to
-[localhost](http://localhost/). This contains links 
+[localhost](http://localhost/). This contains links to the management
+interface, the CA files, and the CRLs.
 
 ## Retiring certificates
 
