@@ -177,7 +177,12 @@ case "$1" in
 		openssl ocsp -index /var/lib/eid/${EID_TEST_CA_NAME}-index.txt -port 8888 -CA /var/lib/eid/${EID_TEST_CA_NAME}.crt -rsigner /var/lib/eid/${EID_TEST_CA_NAME}.crt -rkey /var/lib/eid/${EID_TEST_CA_NAME}.key
 	;;
 	ocspsigner)
-		notyet
+		cd /var/lib/eid
+		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e "s/[^[a-zA-Z0-9]]/_/g")
+		days=$(( ( $(date -d "now + $ca_years years" +%s) - $(date -d now +%s) ) / 86400 ))
+		openssl req -batch -nodes -new -newkey rsa:$key_size -keyout ${EID_TEST_CA_NAME}-ocsp.key -out ${EID_TEST_CA_NAME}-ocsp.csr -config /usr/share/eid-test/intermediate/ocsp.conf
+		openssl ca -batch -days $days -out ${EID_TEST_CA_NAME}-ocsp.crt -in ${EID_TEST_CA_NAME}-ocsp.csr -config /usr/share/eid-test/intermediate/ca.conf -extensions ocsp_exts
+		echo "OCSP certificate for CA \"$EID_TEST_CA_NAME\" generated. You can now start the OCSP responder."
 	;;
 	importcrl)
 		notyet
