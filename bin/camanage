@@ -203,6 +203,7 @@ case "$1" in
 	build)
 		$0 buildroot
 		$0 buildca
+		$0 ocspsigner
 	;;
 	exportcrl)
 		notyet
