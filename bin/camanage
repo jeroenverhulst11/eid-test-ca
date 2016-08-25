@@ -177,11 +177,11 @@ case "$1" in
 		if [ -f /var/lib/eid/${EID_TEST_CA_NAME}-ocsp.key ]
 		then
 			cd /var/lib/eid
-			if [ ! -f ${EID_TEST_CA_NAME}-ocsptrust.pem ]
+			if [ ! -f ${EID_TEST_CA_NAME}-ocspother.pem ]
 			then
-				cat ${EID_TEST_CA_NAME}.crt ${EID_TEST_CA_NAME}-ocsp.crt > ${EID_TEST_CA_NAME}-ocsptrust.pem
+				cat ${EID_TEST_CA_NAME}.crt ${EID_TEST_ROOT_NAME}.crt > ${EID_TEST_CA_NAME}-ocspother.pem
 			fi
-			openssl ocsp -index /var/lib/eid/${EID_TEST_CA_NAME}-index.txt -port 8888 -CA /var/lib/eid/${EID_TEST_CA_NAME}.crt -rsigner /var/lib/eid/${EID_TEST_CA_NAME}-ocsp.crt -rkey /var/lib/eid/${EID_TEST_CA_NAME}-ocsp.key -rother /var/lib/eid/${EID_TEST_CA_NAME}-ocsptrust.pem -nmin 1
+			openssl ocsp -index /var/lib/eid/${EID_TEST_CA_NAME}-index.txt -port 8888 -CA /var/lib/eid/${EID_TEST_CA_NAME}.crt -rsigner /var/lib/eid/${EID_TEST_CA_NAME}-ocsp.crt -rkey /var/lib/eid/${EID_TEST_CA_NAME}-ocsp.key -rother /var/lib/eid/${EID_TEST_CA_NAME}-ocspother.pem -nmin 1
 		else
 			openssl ocsp -index /var/lib/eid/${EID_TEST_CA_NAME}-index.txt -port 8888 -CA /var/lib/eid/${EID_TEST_CA_NAME}.crt -rsigner /var/lib/eid/${EID_TEST_CA_NAME}.crt -rkey /var/lib/eid/${EID_TEST_CA_NAME}.key -rother /var/lib/eid/${EID_TEST_ROOT_NAME}.crt -nmin 1
 		fi
@@ -192,7 +192,7 @@ case "$1" in
 		days=$(( ( $(date -d "now + $ca_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		openssl req -batch -nodes -new -newkey rsa:$key_size -keyout ${EID_TEST_CA_NAME}-ocsp.key -out ${EID_TEST_CA_NAME}-ocsp.csr -config /usr/share/eid-test/intermediate/ocsp.conf
 		openssl ca -batch -days $days -out ${EID_TEST_CA_NAME}-ocsp.crt -in ${EID_TEST_CA_NAME}-ocsp.csr -config /usr/share/eid-test/intermediate/ca.conf -extensions ocsp_exts
-		cat ${EID_TEST_CA_NAME}.crt ${EID_TEST_CA_NAME}-ocsp.crt > ${EID_TEST_CA_NAME}-ocsptrust.pem
+		cat ${EID_TEST_CA_NAME}.crt ${EID_TEST_ROOT_NAME}.crt > ${EID_TEST_CA_NAME}-ocspother.pem
 		echo "OCSP certificate for CA \"$EID_TEST_CA_NAME\" generated. You can now start the OCSP responder."
 	;;
 	importcrl)
