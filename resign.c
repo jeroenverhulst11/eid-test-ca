@@ -13,7 +13,7 @@
 
 void* set_photohash(struct derdata* idfile, char* photofn, int hashnid) {
 	char tag, length = 0;
-	uint8_t* ptr = (char*)idfile->data;
+	uint8_t* ptr = (uint8_t*)idfile->data;
 	struct derdata* rv = idfile;
 	const EVP_MD *hash = (hashnid == NID_sha1 ? EVP_sha1() : EVP_sha256());
 	int hashlen = EVP_MD_size(hash);

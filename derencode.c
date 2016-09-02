@@ -112,8 +112,8 @@ struct derdata* der_list(uint8_t tag, struct derdata* first, va_list ap) {
 struct derdata* der_string(char* string) {
 	int printable = 1;
 	int ia5 = 1;
-	unsigned char* ptr = string;
-	uint8_t tag, *uptr;
+	char* ptr = string;
+	uint8_t *uptr;
 	struct derdata* retval;
 	struct derdata* length;
 	size_t len;
@@ -149,9 +149,9 @@ struct derdata* der_string(char* string) {
 	retval = derdata_new(len);
 	uptr = retval->data;
 	*uptr++ = printable ? 0x13 : (ia5 ? 0x16 : 0x0c); // tag
-	memcpy(uptr, length->data, length->len);
+	memcpy((void*)uptr, length->data, length->len);
 	uptr += length->len;
-	strncpy(uptr, string, retval->len - 1 - length->len);
+	strncpy((char*)uptr, string, retval->len - 1 - length->len);
 	derdata_destroy(length);
 	return retval;
 }
