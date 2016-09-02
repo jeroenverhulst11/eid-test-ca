@@ -1,6 +1,6 @@
 all: fromcard bin/resign
 
-CFLAGS := -g -O2
+CFLAGS := -g -O2 -Wall -Werror
 
 fromcard: fromcard.c derencode.c base64encode.c
 	# For Linux:
