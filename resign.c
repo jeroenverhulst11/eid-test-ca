@@ -17,24 +17,32 @@ void* set_photohash(struct derdata* idfile, char* photofn, int hashnid) {
 	struct derdata* rv = idfile;
 	const EVP_MD *hash = (hashnid == NID_sha1 ? EVP_sha1() : EVP_sha256());
 	int hashlen = EVP_MD_size(hash);
+	int orighashlen;
 
 	do {
 		ptr += length;
 		tag = *ptr++; length = *ptr++;
 	} while(tag != PHOTO_HASH_TAG);
-	if(length != hashlen) {
+	orighashlen = length;
+	if(orighashlen != hashlen) {
 		FILE *f;
 		struct derdata *photo;
 		int offset = (ptr - (idfile->data));
 		size_t plen;
 		EVP_MD_CTX ctx;
-		rv = derdata_new(idfile->len + (hashlen - length));
+		rv = derdata_new(idfile->len + (hashlen - orighashlen));
 		memcpy(rv->data, idfile->data, idfile->len);
-		memmove(rv->data + offset + hashlen, rv->data + offset + length, idfile->len - offset - length);
-		ptr = (char*)(rv->data + offset);
-		ptr[-1] = (uint8_t)hashlen;
+		if((idfile->len - offset) != orighashlen) {
+			memmove(rv->data + offset + hashlen, rv->data + offset + orighashlen, idfile->len - offset - orighashlen);
+		}
+		ptr = (uint8_t*)(rv->data + offset);
+		*(ptr-1) = (uint8_t)hashlen;
 
 		f = fopen(photofn, "rb");
+		if(!f) {
+			perror("fopen");
+			exit(EXIT_FAILURE);
+		}
 		fseek(f, 0, SEEK_END);
 		plen = ftell(f);
 		fseek(f, 0, SEEK_SET);
@@ -91,6 +99,10 @@ int main(int argc, char** argv) {
 	RSA *key_address = EVP_PKEY_get1_RSA(evp_key);
 
 	f = fopen(id_fn, "rb");
+	if(!f) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
 	fseek(f, 0, SEEK_END);
 	size_t size = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -99,6 +111,10 @@ int main(int argc, char** argv) {
 	fclose(f);
 
 	f = fopen(address_fn, "rb");
+	if(!f) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -119,6 +135,10 @@ int main(int argc, char** argv) {
 	fclose(f);
 
 	f = fopen(addout_fn, "wb");
+	if(!f) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
 	fwrite(address_sign->data, address_sign->len, 1, f);
 	fclose(f);
 }
