@@ -220,9 +220,15 @@ struct derdata* gen_csr(CK_SESSION_HANDLE session, char* type, char* sn_str, cha
 char* pem_csr(struct derdata* csr) {
 	size_t b64len = (csr->len / 3 + 1) * 4;
 	size_t newlines = b64len / 65 + 2;
+#ifdef _WIN32
+	char header[] = "-----BEGIN CERTIFICATE REQUEST-----\n\r";
+	char footer[] = "-----END CERTIFICATE REQUEST-----\n\r";
+	char *encoded = malloc(b64len + newlines * 2 + 1 + sizeof header + sizeof footer);
+#else
 	char header[] = "-----BEGIN CERTIFICATE REQUEST-----\n";
 	char footer[] = "-----END CERTIFICATE REQUEST-----\n";
 	char *encoded = malloc(b64len + newlines + 1 + sizeof header + sizeof footer);
+#endif
 	char *retval = encoded;
 	base64_encodestate state;
 	int count;
@@ -234,8 +240,11 @@ char* pem_csr(struct derdata* csr) {
 	encoded += count;
 	count = base64_encode_blockend(encoded, &state);
 	encoded += count - 1;
-	if(*encoded != '\n') {
+	if(*encoded != '\n' && *encoded != '\r') {
 		*(++encoded) = '\n';
+#ifdef _WIN32
+		*(++encoded) = '\r';
+#endif
 	}
 	encoded++;
 	strcpy(encoded, footer);
