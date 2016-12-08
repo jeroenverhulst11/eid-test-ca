@@ -176,7 +176,7 @@ case "$1" in
 			echo "E: cannot generate CA certificate: it already exists!"
 			exit 1
 		fi
-		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ca_crl.key -out ca_crl.csr -config /usr/share/eid-test/intermediate/ca.conf
+		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ca_crl.key -out ca_crl.csr -config /usr/share/eid-test/intermediate/ca_crl.conf
 		echo "02" > /var/lib/eid/ca_crl-serial
 		mkdir -p /var/lib/eid/ca_crl
 		chmod -R go+w /var/lib/eid/
@@ -194,8 +194,7 @@ case "$1" in
 		$0 genca_crl "$@"
 		$0 signca_crl "$@"
 		exec $0 updatecrls
-	;;
-	
+	;;	
 	genca_none)
 		cd /var/lib/eid
 		if [ -f ca_none.key ]
@@ -203,7 +202,7 @@ case "$1" in
 			echo "E: cannot generate CA certificate: it already exists!"
 			exit 1
 		fi
-		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ca_none.key -out ca_none.csr -config /usr/share/eid-test/intermediate/ca.conf
+		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ca_none.key -out ca_none.csr -config /usr/share/eid-test/intermediate/ca_none.conf
 		echo "03" > /var/lib/eid/ca_none-serial
 		mkdir -p /var/lib/eid/ca_none
 		chmod -R go+w /var/lib/eid/
@@ -296,7 +295,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_crl
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca_crl
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_crl.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca_crl
 		cat /tmp/certout.pem
 	;;
 	signauth_ca_crl)
@@ -304,7 +303,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_crl
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca_crl
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_crl.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca_crl
 		cat /tmp/certout.pem
 	;;	
 	signsig_ca_none)
@@ -312,7 +311,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_none
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca_none
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_none.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca_none
 		cat /tmp/certout.pem
 	;;
 	signauth_ca_none)
@@ -320,7 +319,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_none
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca_none
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_none.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca_none
 		cat /tmp/certout.pem
 	;;	
 	revoke)
