@@ -230,9 +230,7 @@ EOF
 	my $sigcsr = $q->param('sigcsr');
 	my $sigserial = $q->param('sigserial');
 	my $ca_name = $q->param('ca_name');
-	if(!defined($ca_name)) {
-		$ca_name = 'ca';		
-	}
+	
 
 	if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
 				!defined($sigserial))) {
