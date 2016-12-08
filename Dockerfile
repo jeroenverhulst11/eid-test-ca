@@ -1,5 +1,5 @@
 FROM debian:jessie
-MAINTAINER Wouter Verhelst <wouter.verhelst@fedict.be>
+MAINTAINER Jeroen Verhulst <jeroen.verhulst@connective.eu>
 RUN apt-get update && apt-get install -y apache2 openssl cron libcgi-pm-perl libxml-sax-writer-perl && apt-get clean
 ADD bin/* /usr/local/bin/
 ADD root/* /usr/share/eid-test/root/
