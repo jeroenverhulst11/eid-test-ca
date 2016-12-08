@@ -281,7 +281,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts
 		cat /tmp/certout.pem
 	;;
 	signauth_ca)
@@ -289,7 +289,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts
 		cat /tmp/certout.pem
 	;;	
 	signsig_ca_crl)
@@ -297,7 +297,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_crl
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_crl.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca_crl
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_crl.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts
 		cat /tmp/certout.pem
 	;;
 	signauth_ca_crl)
@@ -305,7 +305,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_crl
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_crl.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca_crl
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_crl.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts
 		cat /tmp/certout.pem
 	;;	
 	signsig_ca_none)
@@ -313,7 +313,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_none
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_none.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts_ca_none
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_none.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions sign_exts
 		cat /tmp/certout.pem
 	;;
 	signauth_ca_none)
@@ -321,7 +321,7 @@ case "$1" in
 		openssl req -in /tmp/req.pem -noout -text >&2
 		days=$(( ( $(date -d "now + $cert_years years" +%s) - $(date -d now +%s) ) / 86400 ))
 		mkdir -p /var/lib/eid/ca_none
-		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_none.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts_ca_none
+		openssl ca -batch -config /usr/share/eid-test/intermediate/ca_none.conf -days $days -out /tmp/certout.pem -in /tmp/req.pem -extensions auth_exts
 		cat /tmp/certout.pem
 	;;	
 	revoke)
