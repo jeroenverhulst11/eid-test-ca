@@ -215,10 +215,10 @@ case "$1" in
 		openssl ca -batch -days $days -out ca_none.crt -in ca_none.csr -config /usr/share/eid-test/root/root.conf -extensions int_exts
 		echo "CA certificate for ca \"ca_none\" signed by \"$EID_TEST_ROOT_NAME\"."
 	;;
-	buildca_crl)
+	buildca_none)
 		shift
-		$0 genca_crl "$@"
-		$0 signca_crl "$@"
+		$0 genca_none "$@"
+		$0 signca_none "$@"
 		exec $0 updatecrls
 	;;
 	run)
