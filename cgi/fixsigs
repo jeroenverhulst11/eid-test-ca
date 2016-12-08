@@ -165,7 +165,12 @@ sub get_cert {
 	} else {
 		print $q->hidden("${crt}type");
 		if($type eq "csr") {
-			print $q->h2("$crt certificate by CSR");
+			print $q->h2("$crt certificate by CSR");			
+			print $q->radio_group(-name=>"$ca_name",
+				-values=>['ca', 'ca_crl', 'ca_none'],
+				-labels=>{ "ca" => "CA",
+					   "ca_crl" => "CA with incorrect OCSP",
+					   "ca_none" => "CA with incorrect OCSP and CRL"});			
 			print $q->p("Please paste the CSR (in PEM format) in the field below:");
 			print $q->textarea(-name=>"${crt}csr", -rows=>25, -columns=>80);
 			print $q->br();
@@ -224,6 +229,10 @@ EOF
 	my $sigtype = $q->param('sigtype');
 	my $sigcsr = $q->param('sigcsr');
 	my $sigserial = $q->param('sigserial');
+	my $ca_name = $q->param('ca_name');
+	if(!defined($sigtype)) {
+		$ca_name = $config{CA_NAME};		
+	}
 
 	if(!defined($sigtype) || ($sigtype ne 'none' && !defined($sigcsr) &&
 				!defined($sigserial))) {
@@ -233,6 +242,7 @@ EOF
 		push @hidden, 'sigtype';
 		push @hidden, 'sigcsr';
 		push @hidden, 'sigserial';
+		push @hidden, 'ca_name';
 	}
 
 	my $authtype = $q->param('authtype');
@@ -255,15 +265,15 @@ EOF
 	open XML, ">$dir/input.xml";
 	print XML $xml_input;
 	close XML;
-
+	
 	if($sigtype ne "none") {
 		if($sigtype eq "csr") {
 			open PEM, ">$dir/sig.csr";
 			print PEM $sigcsr;
 			close PEM;
-			system("camanage signsig < $dir/sig.csr > $dir/sig.pem");
+			system("camanage signsig_$ca_name < $dir/sig.csr > $dir/sig.pem");
 		} elsif($sigtype eq "previous") {
-			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$sigserial","$dir/sig.pem";
+			symlink "/var/lib/eid/" . $ca_name . "/$sigserial","$dir/sig.pem";
 		}
 		system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
 	} else {
@@ -275,9 +285,9 @@ EOF
 			open PEM, ">$dir/auth.csr";
 			print PEM $authcsr;
 			close PEM;
-			system("camanage signauth < $dir/auth.csr > $dir/auth.pem");
+			system("camanage signauth_$ca_name < $dir/auth.csr > $dir/auth.pem");
 		} elsif($sigtype eq "previous") {
-			symlink "/var/lib/eid/" . $config{CA_NAME} . "/$authserial","$dir/auth.pem";
+			symlink "/var/lib/eid/" . $ca_name . "/$authserial","$dir/auth.pem";
 		}
 		system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
 	} else {
@@ -285,7 +295,7 @@ EOF
 	}
 
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . ".crt -outform der -out $dir/" . $config{ROOT_NAME} . ".der");
-	system("openssl x509 -in /var/lib/eid/" . $config{CA_NAME} . ".crt -outform der -out $dir/" . $config{CA_NAME} . ".der");
+	system("openssl x509 -in /var/lib/eid/" . $ca_name . ".crt -outform der -out $dir/" . $ca_name . ".der");
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.crt -outform der -out $dir/rrn.der");
 
 	my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
@@ -298,7 +308,7 @@ EOF
 				"3F00DF014034" => "$dir/addrsig",
 				"3F00DF005038" => "$dir/auth.der",
 				"3F00DF005039" => "$dir/sig.der",
-				"3F00DF00503A" => "$dir/" . $config{CA_NAME} . ".der",
+				"3F00DF00503A" => "$dir/" . $ca_name . ".der",
 				"3F00DF00503B" => "$dir/" . $config{ROOT_NAME} . ".der",
 				"3F00DF00503C" => "$dir/rrn.der");
 
