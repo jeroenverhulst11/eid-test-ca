@@ -20,8 +20,8 @@ fi
 
 export EID_TEST_ROOT_NAME="root"
 export EID_TEST_CA_NAME="ca"
-export EID_TEST_CA_CRL="ca-crl"
-export EID_TEST_CA_NONE="ca-none"
+export EID_TEST_CA_CRL="ca_crl"
+export EID_TEST_CA_NONE="ca_none"
 
 export EID_TEST_CA_TYPE="${EID_TEST_CA_TYPE:-sha256}"
 export EID_TEST_CA_ORG="${EID_TEST_CA_ORG:-Connective NV}"
