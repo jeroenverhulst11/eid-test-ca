@@ -272,10 +272,12 @@ EOF
 			print PEM $sigcsr;
 			close PEM;
 			system("camanage signsig_$ca_name < $dir/sig.csr > $dir/sig.pem");
+			sleep 2;
 		} elsif($sigtype eq "previous") {
 			symlink "/var/lib/eid/" . $ca_name . "/$sigserial","$dir/sig.pem";
 		}
 		system("openssl x509 -in $dir/sig.pem -outform der -out $dir/sig.der");
+		sleep 2;
 	} else {
 		symlink "/dev/null", "$dir/sig.der";
 	}
@@ -286,10 +288,12 @@ EOF
 			print PEM $authcsr;
 			close PEM;
 			system("camanage signauth_$ca_name < $dir/auth.csr > $dir/auth.pem");
+			sleep 2;
 		} elsif($sigtype eq "previous") {
 			symlink "/var/lib/eid/" . $ca_name . "/$authserial","$dir/auth.pem";
 		}
 		system("openssl x509 -in $dir/auth.pem -outform der -out $dir/auth.der");
+		sleep 2;
 	} else {
 		symlink "/dev/null", "$dir/auth.der";
 	}
@@ -297,6 +301,7 @@ EOF
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . ".crt -outform der -out $dir/" . $config{ROOT_NAME} . ".der");
 	system("openssl x509 -in /var/lib/eid/" . $ca_name . ".crt -outform der -out $dir/" . $ca_name . ".der");
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.crt -outform der -out $dir/rrn.der");
+	sleep 5;
 
 	my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
 				"3F00DF014033" => "$dir/addressfile.asn1",
