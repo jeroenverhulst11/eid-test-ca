@@ -165,7 +165,12 @@ sub get_cert {
 	} else {
 		print $q->hidden("${crt}type");
 		if($type eq "csr") {
-			print $q->h2("$crt certificate by CSR");					
+			print $q->h2("$crt certificate by CSR");			
+			print $q->radio_group(-name=>"ca_name",
+				-values=>['ca', 'ca_crl', 'ca_none'],
+				-labels=>{ "ca" => "CA",
+					   "ca_crl" => "CA with incorrect OCSP",
+					   "ca_none" => "CA with incorrect OCSP and CRL"});			
 			print $q->p("Please paste the CSR (in PEM format) in the field below:");
 			print $q->textarea(-name=>"${crt}csr", -rows=>25, -columns=>80);
 			print $q->br();
