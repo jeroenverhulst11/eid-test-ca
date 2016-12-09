@@ -168,9 +168,10 @@ sub get_cert {
 			print $q->h2("$crt certificate by CSR");			
 			print $q->radio_group(-name=>"ca_name",
 				-values=>['ca', 'ca_crl', 'ca_none'],
-				-labels=>{ "ca" => "CA",
-					   "ca_crl" => "CA with incorrect OCSP",
-					   "ca_none" => "CA with incorrect OCSP and CRL"});			
+				-labels=>{ "ca" => "Create certificate for CA with correct OCSP and CRL",
+					   "ca_crl" => "Create certificate for CA with incorrect OCSP but correct CRL",
+					   "ca_none" => "Create certificate for CA with incorrect OCSP and CRL",
+					   "expired" => "Create an expired certificate for CA with correct OCSP and CRL"});			
 			print $q->p("Please paste the CSR (in PEM format) in the field below:");
 			print $q->textarea(-name=>"${crt}csr", -rows=>25, -columns=>80);
 			print $q->br();
