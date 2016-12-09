@@ -122,7 +122,7 @@ sub do_html {
 
 sub get_cur_certs {
 	my $type = shift;
-	open INDEX, "/var/lib/eid/" . $config{CA_NAME} . "-index.txt";
+	open INDEX, "/var/lib/eid/ca-index.txt";
 	my $pems = ();
 	my $friendlies = {};
 	my $states = {};
