@@ -167,7 +167,7 @@ sub get_cert {
 		if($type eq "csr") {
 			print $q->h2("$crt certificate by CSR");			
 			print $q->radio_group(-name=>"ca_name",
-				-values=>['ca', 'ca_crl', 'ca_none'],
+				-values=>['ca', 'ca_crl', 'ca_none', 'expired'],
 				-labels=>{ "ca" => "Create certificate for CA with correct OCSP and CRL",
 					   "ca_crl" => "Create certificate for CA with incorrect OCSP but correct CRL",
 					   "ca_none" => "Create certificate for CA with incorrect OCSP and CRL",
