@@ -355,6 +355,7 @@ sub suspend {
 		$serial =~ s/\.pem$//;
 		print "$serial...\n";
 		system("camanage suspend $serial");
+		system("camanage restart_ocsp);
 	}
 	print "done\n";
 	print "</code></blockquote>";
@@ -383,6 +384,7 @@ sub revoke {
 		$serial =~ s/\.pem$//;
 		print "$serial...\n";
 		system("camanage revoke $serial");
+		system("camanage restart_ocsp);
 	}
 	print "done\n";
 	print "</code></blockquote>";
@@ -411,6 +413,7 @@ sub reinstate {
 		$serial =~ s/\.pem$//;
 		print "$serial...\n";
 		system("camanage reinstate $serial");
+		system("camanage restart_ocsp);
 	}
 	print "done\n";
 	print "</code></blockquote>";

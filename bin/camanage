@@ -261,6 +261,16 @@ case "$1" in
 		openssl ca -batch -config /usr/share/eid-test/root/root.conf -gencrl -crldays 30 -out crls/${EID_TEST_ROOT_NAME}.crl
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -gencrl -crldays 7 -out crls/${EID_TEST_CA_NAME}.crl
 	;;	
+	restart_ocsp)
+		pid=$(lsof -t -i:8888)
+        sudo kill -9 $pid
+		if [ -f /var/lib/eid/ca-ocsp.key ]
+		then	
+			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca-ocsp.crt -rkey /var/lib/eid/ca-ocsp.key -rother /var/lib/eid/ca-ocspother.pem -nmin 1 &
+		else
+			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca.crt -rkey /var/lib/eid/ca.key -rother /var/lib/eid/${EID_TEST_ROOT_NAME}.crt -nmin 1 &
+		fi
+	;;
 	build)
 		$0 buildroot
 		$0 buildca
@@ -340,26 +350,10 @@ case "$1" in
 	revoke)
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -revoke /var/lib/eid/"${EID_TEST_CA_NAME}"/"$2".pem
 		exec $0 updatecrls
-		pid=$(lsof -t -i:8888)
-        kill -9 $pid
-		if [ -f /var/lib/eid/ca-ocsp.key ]
-		then	
-			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca-ocsp.crt -rkey /var/lib/eid/ca-ocsp.key -rother /var/lib/eid/ca-ocspother.pem -nmin 1 &
-		else
-			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca.crt -rkey /var/lib/eid/ca.key -rother /var/lib/eid/${EID_TEST_ROOT_NAME}.crt -nmin 1 &
-		fi
 	;;
 	suspend)
 		openssl ca -batch -config /usr/share/eid-test/intermediate/ca.conf -revoke /var/lib/eid/"${EID_TEST_CA_NAME}"/"$2".pem -crl_reason certificateHold
 		exec $0 updatecrls
-		pid=$(lsof -t -i:8888)
-        kill -9 $pid
-		if [ -f /var/lib/eid/ca-ocsp.key ]
-		then	
-			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca-ocsp.crt -rkey /var/lib/eid/ca-ocsp.key -rother /var/lib/eid/ca-ocspother.pem -nmin 1 &
-		else
-			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca.crt -rkey /var/lib/eid/ca.key -rother /var/lib/eid/${EID_TEST_ROOT_NAME}.crt -nmin 1 &
-		fi
 	;;
 	reinstate)
 		# Unfortunately, OpenSSL doesn't have a commend to "unrevoke" a
@@ -367,14 +361,6 @@ case "$1" in
 		# Luckily, the ca "database" is just a text file...
 		cp /var/lib/eid/ca-index.txt /var/lib/eid/ca-index.txt.old
 		perl -i -e 'while(<>) { my @arr = split(/\t/); if ($arr[0] eq "R" && $arr[3] eq "'$2'") { print join("\t", ("V", $arr[1], "", @arr[3..5])) } else { print $_; } }' /var/lib/eid/ca-index.txt
-		pid=$(lsof -t -i:8888)
-        kill -9 $pid
-		if [ -f /var/lib/eid/ca-ocsp.key ]
-		then	
-			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca-ocsp.crt -rkey /var/lib/eid/ca-ocsp.key -rother /var/lib/eid/ca-ocspother.pem -nmin 1 &
-		else
-			openssl ocsp -index /var/lib/eid/ca-index.txt -port 8888 -CA /var/lib/eid/ca.crt -rsigner /var/lib/eid/ca.crt -rkey /var/lib/eid/ca.key -rother /var/lib/eid/${EID_TEST_ROOT_NAME}.crt -nmin 1 &
-		fi
 	;;
 	*)
 		echo "E: Unsupported request: $1. Known modes of operation:" >&2
