@@ -295,6 +295,10 @@ EOF
 		symlink "/dev/null", "$dir/auth.der";
 	}
 
+	if($ca_name eq "expired") {
+		$ca_name = 'ca';
+	}
+	
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . ".crt -outform der -out $dir/" . $config{ROOT_NAME} . ".der");
 	system("openssl x509 -in /var/lib/eid/" . $ca_name . ".crt -outform der -out $dir/" . $ca_name . ".der");
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.crt -outform der -out $dir/rrn.der");
