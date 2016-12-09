@@ -20,8 +20,6 @@ fi
 
 export EID_TEST_ROOT_NAME="root"
 export EID_TEST_CA_NAME="ca"
-export EID_TEST_CA_CRL="ca_crl"
-export EID_TEST_CA_NONE="ca_none"
 
 export EID_TEST_CA_TYPE="${EID_TEST_CA_TYPE:-sha256}"
 export EID_TEST_CA_ORG="${EID_TEST_CA_ORG:-Connective NV}"
@@ -152,7 +150,7 @@ case "$1" in
 		EID_TEST_CA_NAME=$(echo -n "$EID_TEST_CA_NAME" | sed -e 's/[^[a-zA-Z0-9]]/_/g')
 		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ${EID_TEST_CA_NAME}.key -out ${EID_TEST_CA_NAME}.csr -config /usr/share/eid-test/intermediate/ca.conf
 		touch /var/lib/eid/${EID_TEST_CA_NAME}-index.txt
-		echo "01" > /var/lib/eid/${EID_TEST_CA_NAME}-serial
+		echo "01" > /var/lib/eid/ca-serial
 		mkdir -p /var/lib/eid/${EID_TEST_CA_NAME}
 		chmod -R go+w /var/lib/eid/
 		echo "Intermediate CA \"$EID_TEST_CA_NAME\" generated."
@@ -179,7 +177,7 @@ case "$1" in
 			exit 1
 		fi
 		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ca_crl.key -out ca_crl.csr -config /usr/share/eid-test/intermediate/ca_crl.conf
-		echo "02" > /var/lib/eid/ca_crl-serial
+		echo "02" > /var/lib/eid/ca-serial
 		mkdir -p /var/lib/eid/ca_crl
 		chmod -R go+w /var/lib/eid/
 		echo "Intermediate CA \"ca_crl\" generated."
@@ -205,7 +203,7 @@ case "$1" in
 			exit 1
 		fi
 		openssl req -batch -nodes -new -newkey rsa:$ca_size -keyout ca_none.key -out ca_none.csr -config /usr/share/eid-test/intermediate/ca_none.conf
-		echo "03" > /var/lib/eid/ca_none-serial
+		echo "03" > /var/lib/eid/ca-serial
 		mkdir -p /var/lib/eid/ca_none
 		chmod -R go+w /var/lib/eid/
 		echo "Intermediate CA \"ca_none\" generated."
