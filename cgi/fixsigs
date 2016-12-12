@@ -296,7 +296,7 @@ EOF
 	}
 
 	if($ca_name eq "expired") {
-		$ca_name = 'ca';
+		$ca_name = 'ca';		
 	}
 	
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . ".crt -outform der -out $dir/" . $config{ROOT_NAME} . ".der");
