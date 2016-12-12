@@ -300,7 +300,7 @@ EOF
 	}
 	
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . ".crt -outform der -out $dir/" . $config{ROOT_NAME} . ".der");
-	system("openssl x509 -in /var/lib/eid/" . $ca_name . ".crt -outform der -out $dir/" . $ca_name . ".der");
+	system("openssl x509 -in /var/lib/eid/ca.crt -outform der -out $dir/ca.der");
 	system("openssl x509 -in /var/lib/eid/" . $config{ROOT_NAME} . "-rrn.crt -outform der -out $dir/rrn.der");
 
 	my %writefiles = (	"3F00DF014031" => "$dir/idfile.asn1",
@@ -313,7 +313,7 @@ EOF
 				"3F00DF014034" => "$dir/addrsig",
 				"3F00DF005038" => "$dir/auth.der",
 				"3F00DF005039" => "$dir/sig.der",
-				"3F00DF00503A" => "$dir/" . $ca_name . ".der",
+				"3F00DF00503A" => "$dir/ca.der",
 				"3F00DF00503B" => "$dir/" . $config{ROOT_NAME} . ".der",
 				"3F00DF00503C" => "$dir/rrn.der");
 
